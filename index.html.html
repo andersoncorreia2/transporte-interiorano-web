@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Interiorano | Mobilidade Inteligente</title>
+    <!-- Tailwind CSS (Carrega os estilos automaticamente) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        azul: '#0F52BA',
+                        verde: '#2ECC71',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+
+    <!-- Cabeçalho -->
+    <header class="bg-azul text-white shadow-md fixed w-full top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-car-side"></i> Transporte Interiorano
+            </div>
+            <nav class="hidden md:flex gap-6 font-semibold">
+                <a href="#como-funciona" class="hover:text-gray-300 transition">Como Funciona</a>
+                <a href="#vantagens" class="hover:text-gray-300 transition">Vantagens</a>
+            </nav>
+            <a href="#" class="bg-verde hover:bg-green-500 text-white px-5 py-2 rounded-full font-bold transition shadow-lg">
+                Entrar na Conta
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section (Principal) -->
+    <section class="pt-32 pb-20 px-6 bg-gradient-to-b from-azul to-blue-800 text-white text-center">
+        <div class="container mx-auto max-w-4xl">
+            <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-6">
+                Mobilidade rápida, segura e com preço justo para a sua região.
+            </h1>
+            <p class="text-lg md:text-xl text-blue-100 mb-10">
+                Seja para agendar uma viagem intermunicipal ou para uma corrida emergencial agora mesmo, nós conectamos passageiros e motoristas de confiança.
+            </p>
+            <div class="flex flex-col md:flex-row justify-center gap-4">
+                <a href="#" class="bg-white text-azul px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition shadow-xl flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-android text-2xl"></i> Baixar App Android
+                </a>
+                <a href="#" class="bg-verde text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-green-500 transition shadow-xl flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-globe"></i> Usar Pelo Navegador
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Como Funciona -->
+    <section id="como-funciona" class="py-20 px-6 container mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl font-bold text-azul mb-4">Escolha como deseja viajar</h2>
+            <p class="text-gray-600">Duas modalidades criadas para atender perfeitamente à sua necessidade.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+            <!-- Programada -->
+            <div class="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition">
+                <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center text-azul text-3xl mb-6">
+                    <i class="fa-regular fa-calendar-check"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-3">Viagem Programada</h3>
+                <p class="text-gray-600 mb-4">Garanta sua vaga em eventos, cultos ou viagens intermunicipais. Pague a taxa de reserva via Pix e quite o restante no dia da viagem.</p>
+                <ul class="text-gray-500 space-y-2">
+                    <li><i class="fa-solid fa-check text-verde"></i> Reserva garantida por 24h</li>
+                    <li><i class="fa-solid fa-check text-verde"></i> Escolha o motorista</li>
+                </ul>
+            </div>
+
+            <!-- Emergencial -->
+            <div class="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition">
+                <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center text-verde text-3xl mb-6">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-3">Corrida Emergencial</h3>
+                <p class="text-gray-600 mb-4">Precisa ir agora? Chame um carro ou moto que esteja no nosso radar na sua região. Acompanhe a chegada em tempo real pelo mapa.</p>
+                <ul class="text-gray-500 space-y-2">
+                    <li><i class="fa-solid fa-check text-verde"></i> Radar de parceiros próximos</li>
+                    <li><i class="fa-solid fa-check text-verde"></i> Pague com Dinheiro, Cartão ou Pix</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Segurança e Tecnologia -->
+    <section id="vantagens" class="bg-gray-100 py-20 px-6">
+        <div class="container mx-auto max-w-5xl text-center">
+            <h2 class="text-3xl font-bold text-azul mb-12">Tecnologia e Segurança</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <i class="fa-brands fa-pix text-5xl text-teal-500 mb-4"></i>
+                    <h4 class="text-xl font-bold mb-2">Pix Integrado</h4>
+                    <p class="text-gray-600 text-sm">Geração automática de código Copia e Cola pelo Mercado Pago. O motorista é avisado na hora que você paga.</p>
+                </div>
+                <div>
+                    <i class="fa-solid fa-map-location-dot text-5xl text-blue-500 mb-4"></i>
+                    <h4 class="text-xl font-bold mb-2">GPS em Tempo Real</h4>
+                    <p class="text-gray-600 text-sm">Acompanhe no mapa o trajeto exato do motorista até você e durante toda a viagem.</p>
+                </div>
+                <div>
+                    <i class="fa-solid fa-shield-halved text-5xl text-green-500 mb-4"></i>
+                    <h4 class="text-xl font-bold mb-2">Controle de Inadimplência</h4>
+                    <p class="text-gray-600 text-sm">Sistema rigoroso contra calotes. Usuários inadimplentes são bloqueados e só voltam após quitação.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-8 text-center">
+        <p>&copy; 2026 Transporte Interiorano. Todos os direitos reservados.</p>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Transporte Interiorano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { colors: { azul: '#0F52BA', verde: '#2ECC71' } }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border border-gray-100">
+        <div class="text-center mb-6">
+            <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center text-azul text-3xl mx-auto mb-4">
+                <i class="fa-solid fa-car-side"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Bem-vindo de volta!</h2>
+            <p class="text-gray-500 text-sm mt-1">Acesse sua conta para viajar</p>
+        </div>
+
+        <form id="formLogin" class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Usuário</label>
+                <input type="text" id="inputUsuario" required
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition"
+                    placeholder="Digite seu usuário">
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Senha</label>
+                <input type="password" id="inputSenha" required
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition"
+                    placeholder="Sua senha secreta">
+            </div>
+
+            <button type="submit" id="btnEntrar"
+                class="w-full bg-verde hover:bg-green-500 text-white font-bold py-3 rounded-lg transition shadow-md flex justify-center items-center gap-2 mt-2">
+                <span>Entrar</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <!-- Mensagem de Erro Dinâmica -->
+        <p id="msgErro" class="text-red-500 text-sm text-center font-semibold mt-4 hidden"></p>
+
+        <div class="mt-6 text-center text-sm text-gray-600">
+            Ainda não tem conta? <a href="#" class="text-azul font-bold hover:underline">Cadastre-se</a>
+        </div>
+    </div>
+
+    <!-- 🟢 SCRIPT MÁGICO: É aqui que a Web conversa com o seu Python! -->
+    <script>
+        // Mude para o seu NGROK ou RENDER, igual fez no Kotlin
+        const BASE_URL = "https://transporte-interiorano-backend.onrender.com"; 
+        
+        document.getElementById('formLogin').addEventListener('submit', async function(evento) {
+            evento.preventDefault(); // Impede a página de recarregar
+            
+            const btn = document.getElementById('btnEntrar');
+            const msgErro = document.getElementById('msgErro');
+            
+            // Pega o que o usuário digitou
+            const usuarioDigitado = document.getElementById('inputUsuario').value.trim().toLowerCase();
+            const senhaDigitada = document.getElementById('inputSenha').value;
+
+            // Muda o botão para "Carregando..."
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
+            btn.disabled = true;
+            msgErro.classList.add('hidden');
+
+            try {
+                // Dispara o pedido POST para o servidor Python
+                const resposta = await fetch(`${BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario: usuarioDigitado,
+                        senha: senhaDigitada
+                    })
+                });
+
+                const dados = await resposta.json();
+
+                if (resposta.ok) {
+                    // 🟢 SUCESSO! Salva o Token e o CPF no navegador (LocalStorage)
+                    localStorage.setItem('tokenSessao', dados.token);
+                    localStorage.setItem('cpfLogado', dados.usuario.cpf);
+                    localStorage.setItem('nomeLogado', dados.usuario.nome);
+                    
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> Sucesso!';
+                    btn.classList.replace('bg-verde', 'bg-azul');
+
+                    // Redireciona para o Painel Web (que criaremos no próximo passo)
+                    setTimeout(() => {
+                        window.location.href = 'painel.html';
+                    }, 1000);
+                } else {
+                    // 🔴 ERRO: Mostra a mensagem do Python (Ex: "Usuário ou senha incorretos")
+                    throw new Error(dados.erro || "Credenciais inválidas");
+                }
+            } catch (erro) {
+                // Deu erro de rede ou senha errada
+                msgErro.textContent = erro.message === "Failed to fetch" ? "Servidor offline ou erro de rede." : erro.message;
+                msgErro.classList.remove('hidden');
+                
+                // Restaura o botão
+                btn.innerHTML = '<span>Entrar</span><i class="fa-solid fa-arrow-right"></i>';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
