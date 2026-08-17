@@ -67,15 +67,25 @@
             </div>
 
             <div>
-                <input type="password" id="inputNovaSenha" required
-                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition"
-                    placeholder="Nova Senha">
+                <div class="relative">
+                    <input type="password" id="inputNovaSenha" required
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition pr-10"
+                        placeholder="Nova Senha">
+                    <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-azul transition" onclick="toggleSenha('inputNovaSenha', 'iconeNovaSenha')">
+                        <i id="iconeNovaSenha" class="fa-solid fa-eye-slash"></i>
+                    </button>
+                </div>
             </div>
 
             <div>
-                <input type="password" id="inputConfirmarSenha" required
-                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition"
-                    placeholder="Confirmar Nova Senha">
+                <div class="relative">
+                    <input type="password" id="inputConfirmarSenha" required
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition pr-10"
+                        placeholder="Confirmar Nova Senha">
+                    <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-azul transition" onclick="toggleSenha('inputConfirmarSenha', 'iconeConfirmarSenha')">
+                        <i id="iconeConfirmarSenha" class="fa-solid fa-eye-slash"></i>
+                    </button>
+                </div>
             </div>
 
             <p id="msgErroPasso2" class="text-red-500 text-sm text-center font-semibold mt-2 hidden"></p>
@@ -94,6 +104,37 @@
     <script>
         const BASE_URL = "https://transporte-interiorano-backend.onrender.com"; 
         
+        // =========================================================
+        // 🟢 INÍCIO DA MÁGICA ADICIONADA (MÁSCARA E OLHINHOS)
+        // =========================================================
+
+        // 1. Função para mostrar/esconder senha
+        function toggleSenha(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            }
+        }
+
+        // 2. Máscara do CPF
+        document.getElementById('inputCpf').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove letras
+            if (value.length > 11) value = value.slice(0, 11);
+            if (value.length > 9) value = value.replace(/^(\d{3})(\d{3})(\d{3})(\d)/, "$1.$2.$3-$4");
+            else if (value.length > 6) value = value.replace(/^(\d{3})(\d{3})(\d)/, "$1.$2.$3");
+            else if (value.length > 3) value = value.replace(/^(\d{3})(\d)/, "$1.$2");
+            e.target.value = value;
+        });
+
+        // =========================================================
+        // 🔴 FIM DA MÁGICA ADICIONADA
+        // =========================================================
+
         const formSolicitar = document.getElementById('formSolicitarCodigo');
         const formRedefinir = document.getElementById('formRedefinirSenha');
         const passo1 = document.getElementById('passo1');
