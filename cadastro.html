@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro | Transporte Interiorano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { colors: { azul: '#0F52BA', verde: '#2ECC71', cinzaBotao: '#808080' } }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+
+    <!-- TopBar (Similar ao Scaffold do Compose) -->
+    <header class="bg-azul text-white p-4 flex items-center mb-6 rounded-lg shadow-md max-w-lg mx-auto">
+        <a href="login.html" class="mr-4 hover:text-gray-300">
+            <i class="fa-solid fa-arrow-left text-xl"></i>
+        </a>
+        <h1 class="text-xl font-bold">Transporte Interiorano</h1>
+    </header>
+
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg mx-auto border border-gray-100">
+        <h2 class="text-2xl font-bold text-azul mb-6">CRIAR NOVA CONTA</h2>
+        
+        <p id="msgErroGeral" class="text-red-500 text-sm font-bold mb-4 hidden"></p>
+
+        <form id="formCadastro" class="space-y-6">
+            <!-- Dados Pessoais -->
+            <div>
+                <h3 class="text-xs font-bold text-gray-500 mb-2 uppercase">Dados Pessoais</h3>
+                <div class="space-y-4">
+                    <input type="text" id="nome" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Nome completo">
+                    
+                    <div>
+                        <input type="text" id="cpf" required maxlength="14" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="CPF">
+                        <p id="erroCpf" class="text-red-500 text-xs font-bold mt-1 hidden">⚠️ Este CPF já está cadastrado!</p>
+                    </div>
+                    
+                    <input type="tel" id="telefone" required maxlength="15" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Telefone / WhatsApp">
+                </div>
+            </div>
+
+            <!-- Endereço -->
+            <div>
+                <h3 class="text-xs font-bold text-gray-500 mb-2 uppercase">Endereço</h3>
+                <div class="space-y-4">
+                    <div class="flex gap-4">
+                        <input type="text" id="rua" required class="w-2/3 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Rua/Avenida">
+                        <input type="text" id="numero" required class="w-1/3 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Nº">
+                    </div>
+                    <div class="flex gap-4">
+                        <input type="text" id="complemento" class="w-1/2 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Compl. (Opcional)">
+                        <input type="text" id="bairro" required class="w-1/2 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Bairro">
+                    </div>
+                    <div class="flex gap-4">
+                        <input type="text" id="cidade" required class="w-2/3 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Cidade">
+                        <select id="estado" required class="w-1/3 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none bg-white">
+                            <option value="" disabled selected>UF</option>
+                            <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+                            <!-- Adicione os demais estados aqui -->
+                            <option value="PE">PE</option><option value="SP">SP</option>
+                        </select>
+                    </div>
+                    <input type="text" id="cep" required maxlength="9" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="CEP">
+                </div>
+            </div>
+
+            <!-- Dados da Conta -->
+            <div>
+                <h3 class="text-xs font-bold text-gray-500 mb-2 uppercase">Dados da Conta</h3>
+                <div class="space-y-4">
+                    <div>
+                        <input type="text" id="username" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Nome de Usuário (Para Login)">
+                        <p id="erroUsername" class="text-red-500 text-xs font-bold mt-1 hidden">❌ Nome ocupado! Escolha uma sugestão livre.</p>
+                        <div id="sugestoesUsername" class="flex gap-2 overflow-x-auto mt-2 hidden"></div>
+                    </div>
+
+                    <input type="email" id="email" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Email">
+                    
+                    <div>
+                        <div class="relative">
+                            <input type="password" id="senha" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none pr-10" placeholder="Senha">
+                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600" onclick="toggleSenha('senha', 'iconeSenha')">
+                                <i id="iconeSenha" class="fa-solid fa-eye-slash"></i>
+                            </button>
+                        </div>
+                        <p id="erroSenhaFormat" class="text-red-500 text-[11px] font-bold mt-1 hidden">⚠️ A senha deve conter ao menos 8 caracteres, 1 letra maiúscula, 1 número e 1 caractere especial.</p>
+                    </div>
+
+                    <div>
+                        <div class="relative">
+                            <input type="password" id="confirmarSenha" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none pr-10" placeholder="Confirmar Senha">
+                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600" onclick="toggleSenha('confirmarSenha', 'iconeConfirmarSenha')">
+                                <i id="iconeConfirmarSenha" class="fa-solid fa-eye-slash"></i>
+                            </button>
+                        </div>
+                        <p id="erroSenhasDiferentes" class="text-red-500 text-xs font-bold mt-1 hidden">❌ As senhas digitadas não coincidem!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ofertar Corridas -->
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div class="flex items-center justify-between mb-4">
+                    <span id="labelOfertar" class="font-bold text-gray-500">Ofertar Corridas (Desativado)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="ofertarCarona" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-azul"></div>
+                    </label>
+                </div>
+
+                <div id="camposVeiculo" class="space-y-4 hidden">
+                    <select id="tipoVeiculo" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none bg-white">
+                        <option value="Carro" selected>Carro</option>
+                        <option value="Moto">Moto</option>
+                    </select>
+                    
+                    <input type="text" id="modeloVeiculo" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Modelo do Veículo">
+                    
+                    <div class="flex gap-4">
+                        <input type="text" id="placa" maxlength="8" class="w-3/5 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none uppercase" placeholder="Placa">
+                        <input type="number" id="vagas" value="4" class="w-2/5 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Vagas">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Termos -->
+            <div class="flex items-center gap-2 py-4">
+                <input type="checkbox" id="termosAceitos" class="w-5 h-5 text-azul rounded border-gray-300 focus:ring-azul cursor-pointer">
+                <label for="termosAceitos" class="text-azul font-bold text-sm cursor-pointer hover:underline">
+                    Li e concordo com os Termos de Uso e Política de Privacidade
+                </label>
+            </div>
+
+            <!-- Botões -->
+            <div class="space-y-3">
+                <button type="submit" id="btnConcluir" disabled
+                    class="w-full bg-cinzaBotao text-white font-bold py-3 rounded-lg transition shadow-md disabled:opacity-75 disabled:cursor-not-allowed">
+                    Concluir Cadastro
+                </button>
+                
+                <button type="button" onclick="document.getElementById('formCadastro').reset(); validarFormulario();"
+                    class="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-lg transition hover:bg-gray-50">
+                    Limpar Todos os Campos
+                </button>
+                
+                <a href="login.html" class="block text-center w-full text-red-500 font-bold py-3 hover:bg-red-50 rounded-lg transition">
+                    Fechar Cadastro
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Scripts para validação e máscaras -->
+    <script>
+        const BASE_URL = "https://transporte-interiorano-backend.onrender.com";
+        
+        // Elementos do DOM
+        const form = document.getElementById('formCadastro');
+        const btnConcluir = document.getElementById('btnConcluir');
+        const checkOfertar = document.getElementById('ofertarCarona');
+        const labelOfertar = document.getElementById('labelOfertar');
+        const camposVeiculo = document.getElementById('camposVeiculo');
+        const selectTipoVeiculo = document.getElementById('tipoVeiculo');
+        const inputVagas = document.getElementById('vagas');
+        
+        // Variáveis de estado de validação
+        let isUsuarioValido = false;
+        let isCpfValido = false;
+
+        // Toggle Visibilidade de Senha
+        window.toggleSenha = function(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            }
+        };
+
+        // Lógica de Ofertar Corridas (Ativar/Desativar campos de veículo)
+        checkOfertar.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                labelOfertar.textContent = "Ofertar Corridas (Ativado)";
+                labelOfertar.classList.replace('text-gray-500', 'text-azul');
+                camposVeiculo.classList.remove('hidden');
+                // Torna campos obrigatórios
+                document.getElementById('modeloVeiculo').required = true;
+                document.getElementById('placa').required = true;
+            } else {
+                labelOfertar.textContent = "Ofertar Corridas (Desativado)";
+                labelOfertar.classList.replace('text-azul', 'text-gray-500');
+                camposVeiculo.classList.add('hidden');
+                // Remove obrigatoriedade
+                document.getElementById('modeloVeiculo').required = false;
+                document.getElementById('placa').required = false;
+            }
+            validarFormulario();
+        });
+
+        // Atualizar Vagas baseado no Tipo de Veículo
+        selectTipoVeiculo.addEventListener('change', (e) => {
+            inputVagas.value = e.target.value === 'Carro' ? '4' : '1';
+        });
+
+        // Máscaras Simples (apenas para exemplo, idealmente usar uma biblioteca como Cleave.js)
+        document.getElementById('cpf').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            if (value.length > 9) value = value.replace(/^(\d{3})(\d{3})(\d{3})(\d)/, "$1.$2.$3-$4");
+            else if (value.length > 6) value = value.replace(/^(\d{3})(\d{3})(\d)/, "$1.$2.$3");
+            else if (value.length > 3) value = value.replace(/^(\d{3})(\d)/, "$1.$2");
+            e.target.value = value;
+            
+            // Simulação de verificação de CPF no banco
+            if(value.replace(/\D/g, '').length === 11) {
+                // Aqui iria um fetch para verificarCpfExistente
+                isCpfValido = true; // Assumindo válido para o exemplo
+                document.getElementById('erroCpf').classList.add('hidden');
+            } else {
+                isCpfValido = false;
+            }
+            validarFormulario();
+        });
+
+        // Debounce para Username e geração do nome base
+        let debounceTimer;
+        document.getElementById('nome').addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const nomeText = e.target.value.trim();
+                if(nomeText.includes(' ')) {
+                    const partes = nomeText.split(/\s+/);
+                    if(partes.length >= 2) {
+                        const combinacao = `${partes[0].toLowerCase()}.${partes[partes.length -1].toLowerCase()}`;
+                        document.getElementById('username').value = combinacao;
+                        verificarUsername(combinacao);
+                    }
+                }
+            }, 500);
+            validarFormulario();
+        });
+
+        document.getElementById('username').addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\s+/g, '').toLowerCase();
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                verificarUsername(e.target.value);
+            }, 500);
+        });
+
+        async function verificarUsername(user) {
+            if(!user) return;
+            try {
+                // Substitua esta simulação pela chamada real à sua API:
+                // const resposta = await fetch(`${BASE_URL}/verificar_usuario?user=${user}`);
+                // const dados = await resposta.json();
+                
+                // Simulação de sucesso:
+                isUsuarioValido = true;
+                document.getElementById('erroUsername').classList.add('hidden');
+                document.getElementById('sugestoesUsername').classList.add('hidden');
+            } catch (error) {
+                console.error(error);
+                isUsuarioValido = false;
+            }
+            validarFormulario();
+        }
+
+        // Validação de Senha
+        const inputSenha = document.getElementById('senha');
+        const inputConfirmar = document.getElementById('confirmarSenha');
+        const erroSenha = document.getElementById('erroSenhaFormat');
+        const erroConfirmar = document.getElementById('erroSenhasDiferentes');
+
+        function checarSenha() {
+            const s = inputSenha.value;
+            const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+            const valida = regex.test(s);
+            
+            if (s.length > 0 && !valida) {
+                erroSenha.classList.remove('hidden');
+            } else {
+                erroSenha.classList.add('hidden');
+            }
+            checarConfirmacao();
+            return valida;
+        }
+
+        function checarConfirmacao() {
+            if(inputConfirmar.value.length > 0 && inputSenha.value !== inputConfirmar.value) {
+                erroConfirmar.classList.remove('hidden');
+                return false;
+            } else {
+                erroConfirmar.classList.add('hidden');
+                return inputSenha.value === inputConfirmar.value && inputSenha.value.length > 0;
+            }
+        }
+
+        inputSenha.addEventListener('input', () => { checarSenha(); validarFormulario(); });
+        inputConfirmar.addEventListener('input', () => { checarConfirmacao(); validarFormulario(); });
+
+        // Termos
+        const checkTermos = document.getElementById('termosAceitos');
+        checkTermos.addEventListener('change', validarFormulario);
+
+        // Função Central de Validação
+        function validarFormulario() {
+            const senhaOk = checarSenha();
+            const confirmarOk = checarConfirmacao();
+            const termosOk = checkTermos.checked;
+            
+            // Aqui você deve adicionar verificações `.checkValidity()` para campos required
+            const formValidoBase = form.checkValidity();
+
+            const isValid = formValidoBase && senhaOk && confirmarOk && termosOk && isUsuarioValido && isCpfValido;
+
+            if (isValid) {
+                btnConcluir.disabled = false;
+                btnConcluir.classList.replace('bg-cinzaBotao', 'bg-verde');
+                btnConcluir.classList.add('hover:bg-green-600');
+            } else {
+                btnConcluir.disabled = true;
+                btnConcluir.classList.replace('bg-verde', 'bg-cinzaBotao');
+                btnConcluir.classList.remove('hover:bg-green-600');
+            }
+        }
+
+        // Adicionar eventos aos inputs required para acionar a validação base do form
+        form.querySelectorAll('input[required]').forEach(input => {
+            input.addEventListener('input', validarFormulario);
+        });
+
+        // Submissão do Formulário
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            btnConcluir.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+            btnConcluir.disabled = true;
+
+            // Coletar dados
+            const dadosCadastro = {
+                nome: document.getElementById('nome').value,
+                cpf: document.getElementById('cpf').value.replace(/\D/g, ''),
+                telefone: document.getElementById('telefone').value,
+                email: document.getElementById('email').value,
+                senha: inputSenha.value,
+                username: document.getElementById('username').value,
+                cep: document.getElementById('cep').value.replace(/\D/g, ''),
+                rua: document.getElementById('rua').value,
+                numero: document.getElementById('numero').value,
+                complemento: document.getElementById('complemento').value,
+                bairro: document.getElementById('bairro').value,
+                cidade: document.getElementById('cidade').value,
+                estado: document.getElementById('estado').value,
+            };
+
+            if(checkOfertar.checked) {
+                dadosCadastro.veiculo = `${selectTipoVeiculo.value} - ${document.getElementById('modeloVeiculo').value}`;
+                dadosCadastro.placa = document.getElementById('placa').value.toUpperCase();
+                dadosCadastro.vagas = parseInt(inputVagas.value);
+            } else {
+                dadosCadastro.veiculo = "";
+                dadosCadastro.placa = "";
+                dadosCadastro.vagas = 0;
+            }
+
+            try {
+                // Enviar para o backend (Ajuste a rota conforme sua API)
+                /* 
+                const resposta = await fetch(`${BASE_URL}/usuarios`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosCadastro)
+                });
+                const resultado = await resposta.json();
+                */
+                
+                // Simulação de sucesso
+                alert("Cadastro realizado com sucesso!");
+                window.location.href = 'login.html';
+                
+            } catch (error) {
+                document.getElementById('msgErroGeral').textContent = "Erro ao conectar com o servidor.";
+                document.getElementById('msgErroGeral').classList.remove('hidden');
+                btnConcluir.innerHTML = 'Concluir Cadastro';
+                btnConcluir.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
