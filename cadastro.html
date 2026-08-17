@@ -220,15 +220,15 @@
             else if (value.length > 3) value = value.replace(/^(\d{3})(\d)/, "$1.$2");
             e.target.value = value;
             
-            // Simulação de verificação de CPF no banco
-            if(value.replace(/\D/g, '').length === 11) {
-                // Aqui iria um fetch para verificarCpfExistente
-                isCpfValido = true; // Assumindo válido para o exemplo
-                document.getElementById('erroCpf').classList.add('hidden');
+            // Integração real para verificar o CPF
+            let cpfLimpo = value.replace(/\D/g, '');
+            if(cpfLimpo.length === 11) {
+                verificarCpfBackend(cpfLimpo);
             } else {
                 isCpfValido = false;
+                document.getElementById('erroCpf').classList.add('hidden');
+                validarFormulario();
             }
-            validarFormulario();
         });
 
         // Máscara do Telefone / WhatsApp
@@ -255,6 +255,36 @@
             e.target.value = value;
             validarFormulario();
         });
+
+        // Função para perguntar ao Python se o CPF já existe
+        async function verificarCpfBackend(cpf) {
+            try {
+                // Dispara a pergunta para a sua API (ajuste a rota '/verificar_cpf' se necessário)
+                const resposta = await fetch(`${BASE_URL}/verificar_cpf/${cpf}`);
+                
+                // Dependendo de como seu Python responde, ele pode dar um erro 409 ou um JSON {existe: true}
+                if (resposta.status === 409 || resposta.status === 400) {
+                    // CPF JÁ EXISTE!
+                    isCpfValido = false;
+                    document.getElementById('erroCpf').classList.remove('hidden');
+                } else {
+                    const dados = await resposta.json();
+                    if (dados.existe) {
+                        isCpfValido = false;
+                        document.getElementById('erroCpf').classList.remove('hidden');
+                    } else {
+                        // CPF LIVRE!
+                        isCpfValido = true;
+                        document.getElementById('erroCpf').classList.add('hidden');
+                    }
+                }
+            } catch (erro) {
+                console.error("Erro ao verificar CPF no servidor:", erro);
+                // Se der falha na rede, deixamos preencher e o servidor barra no final
+                isCpfValido = true; 
+            }
+            validarFormulario(); // Atualiza o botão de Concluir
+        }
 
         // Debounce para Username e geração do nome base
         let debounceTimer;
