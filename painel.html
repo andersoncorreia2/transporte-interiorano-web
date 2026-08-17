@@ -9,164 +9,104 @@
     <script>
         tailwind.config = {
             theme: {
-                extend: { colors: { azul: '#0F52BA', verde: '#2ECC71' } }
+                extend: { 
+                    colors: { 
+                        azul: '#0056b3', /* Cor exata do botão Viagem Programada do app */
+                        verde: '#2e7d32', /* Cor exata do botão Corrida Emergencial do app */
+                        fundo: '#f5f5f5'
+                    } 
+                }
             }
         }
     </script>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans">
+<body class="bg-gray-200 flex items-center justify-center min-h-screen">
 
-    <!-- Navbar do Painel -->
-    <header class="bg-azul text-white shadow-md px-6 py-4 flex justify-between items-center">
-        <div class="text-xl font-bold flex items-center gap-2">
-            <i class="fa-solid fa-car-side"></i> Transporte Interiorano
-        </div>
-        <div class="flex gap-4">
-            <a href="emergencial.html" class="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-4 py-2 rounded-lg font-bold text-sm transition shadow">
-                <i class="fa-solid fa-bolt"></i> Chamado Expresso
-            </a>
-            <button onclick="fazerLogout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm transition shadow">
-                <i class="fa-solid fa-right-from-bracket"></i> Sair
+    <!-- Container simulando a tela do celular -->
+    <div class="bg-fundo w-full max-w-sm min-h-[700px] shadow-2xl relative overflow-hidden flex flex-col">
+        
+        <!-- Header / Topbar simulado (igual ao Android) -->
+        <div class="bg-fundo p-4 flex items-center">
+            <button onclick="logout()" class="text-azul hover:text-blue-800 transition">
+                <i class="fa-solid fa-xmark text-2xl"></i>
             </button>
         </div>
-    </header>
 
-    <!-- Conteúdo Principal -->
-    <main class="container mx-auto max-w-4xl px-6 py-10">
-        
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8 flex items-center gap-4">
-            <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center text-azul text-2xl">
-                <i class="fa-solid fa-user"></i>
-            </div>
-            <div>
-                <h2 class="text-2xl font-bold text-gray-800">Olá, <span id="nomeUsuario">Passageiro</span>! 👋</h2>
-                <p class="text-gray-500">Bem-vindo(a) ao seu painel web.</p>
-            </div>
+        <!-- Conteúdo Principal -->
+        <div class="flex-1 px-6 py-2 flex flex-col items-center">
+            
+            <h2 class="text-[22px] font-bold text-azul mb-8 text-center tracking-tight">
+                Como deseja viajar hoje?
+            </h2>
+
+            <!-- Saudação Dinâmica (Opcional, mas legal para o MVP) -->
+            <p id="saudacao" class="text-sm text-gray-500 font-semibold mb-6 w-full text-center hidden"></p>
+
+            <!-- Botões Menores -->
+            <button onclick="alert('Funcionalidade Ver Perfil em desenvolvimento.')" 
+                class="w-full bg-azul text-white font-bold py-3.5 rounded-[8px] mb-4 shadow-sm hover:bg-blue-700 transition">
+                Ver Meu Perfil
+            </button>
+
+            <button onclick="alert('Funcionalidade Histórico em desenvolvimento.')" 
+                class="w-full bg-white text-azul font-bold py-3.5 rounded-[8px] border border-gray-300 mb-6 shadow-sm hover:bg-gray-50 transition">
+                Ver Histórico de Viagens
+            </button>
+
+            <!-- Botão Grande: Viagem Programada -->
+            <button onclick="abrirViagemProgramada()" 
+                class="w-full bg-azul text-white rounded-xl p-5 mb-4 shadow-md text-left flex flex-col items-center justify-center hover:bg-blue-700 transition transform hover:scale-[1.02]">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fa-regular fa-calendar text-xl"></i>
+                    <span class="text-lg font-bold">Viagem Programada</span>
+                </div>
+                <p class="text-center text-[12px] text-blue-100 font-medium px-2 leading-tight">
+                    Agende caronas para o interior ou eventos com antecedência.
+                </p>
+            </button>
+
+            <!-- Botão Grande: Corrida Emergencial -->
+            <button onclick="abrirCorridaEmergencial()" 
+                class="w-full bg-verde text-white rounded-xl p-5 shadow-md text-left flex flex-col items-center justify-center hover:bg-green-800 transition transform hover:scale-[1.02]">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fa-solid fa-bolt text-yellow-400 text-xl"></i>
+                    <span class="text-lg font-bold">Corrida Emergencial</span>
+                </div>
+                <p class="text-center text-[12px] text-green-100 font-medium px-2 leading-tight">
+                    Precisa sair agora? Encontre motoristas nos bairros próximos.
+                </p>
+            </button>
+
         </div>
+    </div>
 
-        <h3 class="text-xl font-bold text-gray-800 mb-4">Corridas Programadas Disponíveis</h3>
-        
-        <!-- Local onde as caronas do banco de dados vão aparecer -->
-        <div id="listaCaronas" class="grid md:grid-cols-2 gap-6">
-            <p class="text-gray-500 col-span-2 text-center py-10"><i class="fa-solid fa-spinner fa-spin text-azul text-2xl"></i> Buscando viagens...</p>
-        </div>
-
-    </main>
-
-    <!-- 🟢 SCRIPT MÁGICO DO PAINEL -->
     <script>
-        // Mesma URL do seu servidor Render
-        const BASE_URL = "https://transporte-interiorano-backend.onrender.com"; 
+        // Lógica simples de navegação baseada no LocalStorage para mostrar o nome
+        window.onload = function() {
+            const nomeLogado = localStorage.getItem('nomeLogado');
+            if(nomeLogado) {
+                const pSaudacao = document.getElementById('saudacao');
+                // Pega só o primeiro nome
+                pSaudacao.textContent = `Olá, ${nomeLogado.split(' ')[0]}!`;
+                pSaudacao.classList.remove('hidden');
+            }
+        };
 
-        // 1. Tenta pegar o Token e o Nome que o login.html salvou na memória
-        const token = localStorage.getItem('tokenSessao');
-        const cpf = localStorage.getItem('cpfLogado');
-        const nome = localStorage.getItem('nomeLogado');
-
-        // 2. Trava de Segurança: Se não tiver token, expulsa de volta pro Login
-        if (!token) {
-            window.location.href = 'login.html';
-        }
-
-        // 3. Mostra o nome do usuário na tela
-        if (nome) {
-            document.getElementById('nomeUsuario').textContent = nome.split(' ')[0]; // Pega só o primeiro nome
-        }
-
-        // 4. Função para deslogar
-        function fazerLogout() {
-            localStorage.clear(); // Apaga o token
-            window.location.href = 'login.html';
-        }
-
-        // 5. Função que puxa as viagens do servidor Python usando o Token
-        async function carregarCaronas() {
-            try {
-                // Chama a mesma rota que o Kotlin usa no BancoDeDados.kt
-                const resposta = await fetch(`${BASE_URL}/caronas/${cpf}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const caronas = await resposta.json();
-                const divLista = document.getElementById('listaCaronas');
-
-                if (caronas.length === 0) {
-                    divLista.innerHTML = '<p class="text-gray-500 col-span-2 text-center py-10">Nenhuma viagem disponível na sua região no momento.</p>';
-                    return;
-                }
-
-                // Desenha os "cartões" de viagem na tela
-                let htmlCaronas = '';
-                caronas.forEach(carona => {
-                    const valor = carona.valor_corrida == "0.00" ? "Gratuito" : `R$ ${carona.valor_corrida}`;
-                    const corValor = carona.valor_corrida == "0.00" ? "text-verde" : "text-azul";
-
-                    htmlCaronas += `
-                    <div class="bg-white p-5 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition">
-                        <div class="flex justify-between items-start mb-3">
-                            <h3 class="font-bold text-lg text-gray-800"><i class="fa-solid fa-map-pin text-azul"></i> ${carona.evento_nome || 'Viagem'}</h3>
-                            <span class="bg-blue-100 text-azul text-xs font-bold px-2 py-1 rounded">Vagas: ${carona.vagas}</span>
-                        </div>
-                        <p class="text-gray-600 text-sm mb-1"><strong>Origem:</strong> ${carona.cidade_origem}</p>
-                        <p class="text-gray-600 text-sm mb-1"><strong>Destino:</strong> ${carona.cidade_destino}</p>
-                        <p class="text-gray-600 text-sm mb-3"><strong>Partida:</strong> ${carona.horario}</p>
-                        
-                        <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                            <span class="${corValor} font-bold text-lg">${valor}</span>
-                            <button onclick="solicitarVaga(${carona.id})" class="bg-verde hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow">
-                                Solicitar Vaga <i class="fa-solid fa-arrow-right ml-1"></i>
-                            </button>
-                        </div>
-                    </div>`;
-                });
-
-                divLista.innerHTML = htmlCaronas;
-
-            } catch (erro) {
-                console.error("Erro ao buscar caronas:", erro);
-                document.getElementById('listaCaronas').innerHTML = '<p class="text-red-500 col-span-2 text-center py-10">Erro ao carregar as viagens.</p>';
+        function logout() {
+            if(confirm("Deseja sair da sua conta?")) {
+                localStorage.clear();
+                window.location.href = 'login.html';
             }
         }
 
-        // 6. Roda a busca automaticamente ao abrir a página
-        carregarCaronas();
+        function abrirViagemProgramada() {
+            // No futuro, isso vai para viagens_programadas.html
+            alert('Em breve: Tela com a lista de caronas agendadas!');
+        }
 
-        // 6. Função para solicitar a vaga
-        async function solicitarVaga(caronaId) {
-            // Confirmação para evitar cliques acidentais
-            if (!confirm("Deseja realmente solicitar uma vaga nesta corrida?")) return;
-
-            try {
-                // Envia o pedido para o Python igual o Kotlin faz!
-                const resposta = await fetch(`${BASE_URL}/solicitacoes`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        carona_id: caronaId,
-                        passageiro: nome,       // Variável salva do Login
-                        passageiro_cpf: cpf     // Variável salva do Login
-                    })
-                });
-
-                const dados = await resposta.json();
-
-                if (resposta.ok || resposta.status === 201) {
-                    alert("✅ Sucesso! O motorista foi notificado.");
-                    // Atualiza a lista para a pessoa ver se as vagas diminuíram
-                    carregarCaronas(); 
-                } else {
-                    alert("❌ Erro: " + (dados.erro || "Não foi possível solicitar a vaga."));
-                }
-            } catch (erro) {
-                console.error("Erro ao solicitar vaga:", erro);
-                alert("❌ Erro de comunicação com o servidor.");
-            }
+        function abrirCorridaEmergencial() {
+            // No futuro, isso vai para radar_emergencial.html
+            alert('Em breve: Tela de solicitação de motoristas próximos!');
         }
     </script>
 </body>
