@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil | Transporte Interiorano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { azul: '#0056b3', vermelho: '#d32f2f', fundo: '#f5f5f5' } } } }
+    </script>
+</head>
+<body class="bg-gray-200 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white w-full max-w-sm min-h-[700px] shadow-2xl relative flex flex-col overflow-y-auto">
+        
+        <!-- Header -->
+        <div class="bg-white p-4 flex items-center sticky top-0 z-10 border-b border-gray-100">
+            <button onclick="window.location.href='painel.html'" class="text-azul p-2 hover:bg-gray-100 rounded-full transition mr-3">
+                <i class="fa-solid fa-arrow-left text-xl"></i>
+            </button>
+            <h1 class="text-[20px] font-bold text-azul">Perfil</h1>
+        </div>
+
+        <!-- Conteúdo do Perfil -->
+        <div class="flex flex-col items-center px-6 py-8">
+            
+            <!-- Avatar -->
+            <div class="w-24 h-24 bg-[#E3F2FD] rounded-full flex items-center justify-center text-azul text-4xl mb-4 shadow-sm">
+                <i class="fa-solid fa-user"></i>
+            </div>
+
+            <!-- Nomes -->
+            <h2 id="nomeUsuario" class="text-[22px] font-bold text-black text-center leading-tight">Carregando...</h2>
+            <p id="emailUsuario" class="text-[14px] text-gray-500 mb-8 text-center">...</p>
+
+            <!-- Cards de Informação -->
+            <div class="w-full space-y-3 mb-8">
+                <div class="border border-gray-200 rounded-xl p-4">
+                    <p class="text-xs text-gray-500 mb-1">Membro desde</p>
+                    <p id="dataCadastro" class="text-base font-bold text-black">...</p>
+                </div>
+
+                <div class="border border-gray-200 rounded-xl p-4">
+                    <p class="text-xs text-gray-500 mb-1">Corridas realizadas</p>
+                    <p id="corridasRealizadas" class="text-base font-bold text-black">...</p>
+                </div>
+
+                <div id="cardPassageiros" class="border border-gray-200 rounded-xl p-4 hidden">
+                    <p class="text-xs text-gray-500 mb-1">Passageiros conduzidos</p>
+                    <p id="passageirosConduzidos" class="text-base font-bold text-black">...</p>
+                </div>
+
+                <div class="border border-gray-200 rounded-xl p-4">
+                    <p class="text-xs text-gray-500 mb-1">Tipo da conta</p>
+                    <p id="tipoConta" class="text-base font-bold text-black">...</p>
+                </div>
+            </div>
+
+            <!-- Botões Inferiores -->
+            <button onclick="alert('Tela de edição (Atualizar Dados) será implementada em breve!')" class="w-full bg-azul text-white font-bold py-3.5 rounded-lg mb-3 shadow-md flex justify-center items-center gap-2 hover:bg-blue-700 transition">
+                <i class="fa-solid fa-pen"></i> Atualizar Dados
+            </button>
+
+            <button onclick="sair()" class="w-full bg-white text-black font-bold py-3.5 rounded-lg border border-gray-300 shadow-sm flex justify-center items-center gap-2 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair da conta
+            </button>
+
+            <button onclick="excluirConta()" class="mt-6 text-sm font-bold text-vermelho hover:underline">
+                Excluir minha conta permanentemente
+            </button>
+
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = "https://transporte-interiorano-backend.onrender.com"; 
+
+        window.onload = async function() {
+            // No seu login, você salvou apenas o CPF e Nome soltos. 
+            // Para ter todos os dados sem chamar o banco de novo toda hora, 
+            // o ideal é que o login também salve um objeto com as infos, mas por ora faremos um fetch.
+            
+            const cpfLogado = localStorage.getItem('cpfLogado');
+            if(!cpfLogado) window.location.href = 'login.html';
+
+            try {
+                const resposta = await fetch(`${BASE_URL}/usuarios_por_cpf/${cpfLogado}`);
+                const dados = await resposta.json();
+
+                if(!dados.erro) {
+                    document.getElementById('nomeUsuario').textContent = dados.nome;
+                    document.getElementById('emailUsuario').textContent = dados.email;
+                    
+                    // Converte data no padrão do seu app (dd/MM/yyyy)
+                    let dataFormatada = dados.data_cadastro || "15/06/2026";
+                    if(dataFormatada.includes('-')) {
+                        const [ano, mes, dia] = dataFormatada.split(' ')[0].split('-');
+                        dataFormatada = `${dia}/${mes}/${ano}`;
+                    }
+                    document.getElementById('dataCadastro').textContent = dataFormatada;
+                    
+                    document.getElementById('corridasRealizadas').textContent = `${dados.corridas_realizadas || 0} corridas`;
+
+                    const isMotorista = dados.veiculo && dados.veiculo.trim() !== "";
+                    document.getElementById('tipoConta').textContent = isMotorista ? "Motorista" : "Solicitante/Passageiro";
+
+                    if(isMotorista) {
+                        document.getElementById('cardPassageiros').classList.remove('hidden');
+                        document.getElementById('passageirosConduzidos').textContent = `${dados.passageiros_conduzidos || 0} passageiros`;
+                    }
+                }
+            } catch(e) {
+                console.error("Erro ao buscar dados do perfil", e);
+            }
+        };
+
+        function sair() {
+            if(confirm("Deseja mesmo sair?")) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function excluirConta() {
+            if(confirm("ATENÇÃO: Deseja realmente excluir sua conta para sempre? Essa ação não pode ser desfeita.")) {
+                const token = localStorage.getItem('tokenSessao');
+                const email = document.getElementById('emailUsuario').textContent;
+                try {
+                    await fetch(`${BASE_URL}/usuarios/${encodeURIComponent(email)}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                } catch(e) {
+                    alert("Erro ao excluir conta.");
+                }
+            }
+        }
+    </script>
+</body>
+</html>
