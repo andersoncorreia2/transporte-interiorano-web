@@ -156,11 +156,11 @@
             msgErro.classList.add('hidden');
 
             try {
-                // A rota exata depende de como está no seu backend. Ajuste se for diferente de /redefinir_senha
-                const resposta = await fetch(`${BASE_URL}/redefinir_senha`, {
+                // Rotas e Variáveis idênticas ao Python
+                const resposta = await fetch(`${BASE_URL}/validar_e_redefinir_senha`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: emailTemporario, codigo: codigo, nova_senha: novaSenha })
+                    body: JSON.stringify({ email: emailTemporario, codigo: codigo, senha: novaSenha })
                 });
 
                 const dados = await resposta.json();
