@@ -231,6 +231,31 @@
             validarFormulario();
         });
 
+        // Máscara do Telefone / WhatsApp
+        document.getElementById('telefone').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não for número
+            if (value.length > 11) value = value.slice(0, 11); // Limita a 11 dígitos
+            
+            // Aplica a formatação (XX) XXXXX-XXXX
+            if (value.length > 2) value = `(${value.slice(0,2)}) ${value.slice(2)}`;
+            if (value.length > 9) value = `${value.slice(0,10)}-${value.slice(10)}`;
+            
+            e.target.value = value;
+            validarFormulario();
+        });
+
+        // Máscara do CEP
+        document.getElementById('cep').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não for número
+            if (value.length > 8) value = value.slice(0, 8); // Limita a 8 dígitos
+            
+            // Aplica a formatação XXXXX-XXX
+            if (value.length > 5) value = `${value.slice(0,5)}-${value.slice(5)}`;
+            
+            e.target.value = value;
+            validarFormulario();
+        });
+
         // Debounce para Username e geração do nome base
         let debounceTimer;
         document.getElementById('nome').addEventListener('input', (e) => {
