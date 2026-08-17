@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Senha | Transporte Interiorano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { colors: { azul: '#0F52BA', verde: '#2ECC71' } }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <!-- Passo 1: Solicitar Código -->
+    <div id="passo1" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border border-gray-100">
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Recuperar Senha</h2>
+            <p class="text-gray-500 text-sm mt-1">Informe seus dados para receber o código de verificação.</p>
+        </div>
+
+        <form id="formSolicitarCodigo" class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Email</label>
+                <input type="email" id="inputEmail" required
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition"
+                    placeholder="Seu email cadastrado">
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">CPF</label>
+                <input type="text" id="inputCpf" required
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition"
+                    placeholder="Seu CPF">
+            </div>
+
+            <p id="msgErroPasso1" class="text-red-500 text-sm text-center font-semibold mt-2 hidden"></p>
+
+            <div class="flex gap-4 mt-4">
+                <a href="login.html" class="w-1/2 text-center text-red-500 hover:text-red-700 font-bold py-3 transition">
+                    Cancelar
+                </a>
+                <button type="submit" id="btnSolicitar" class="w-1/2 bg-azul hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition shadow-md">
+                    Confirmar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Passo 2: Confirmar Código e Nova Senha (Inicialmente oculto) -->
+    <div id="passo2" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border border-gray-100 hidden">
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Confirmar Código OTP</h2>
+            <p class="text-green-600 text-sm font-semibold mt-1">Código enviado para o e-mail cadastrado!</p>
+            <p class="text-gray-500 text-xs mt-1">Insira o código de 6 dígitos enviado para o seu e-mail cadastrado.</p>
+        </div>
+
+        <form id="formRedefinirSenha" class="space-y-4">
+            <div>
+                <input type="text" id="inputCodigo" required
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition"
+                    placeholder="Código de Verificação">
+            </div>
+
+            <div>
+                <input type="password" id="inputNovaSenha" required
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition"
+                    placeholder="Nova Senha">
+            </div>
+
+            <div>
+                <input type="password" id="inputConfirmarSenha" required
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-azul focus:border-transparent transition"
+                    placeholder="Confirmar Nova Senha">
+            </div>
+
+            <p id="msgErroPasso2" class="text-red-500 text-sm text-center font-semibold mt-2 hidden"></p>
+
+            <button type="submit" id="btnRedefinir" class="w-full bg-azul hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition shadow-md mt-4">
+                Redefinir Senha
+            </button>
+             <div class="text-center mt-4">
+                <a href="login.html" class="text-red-500 hover:text-red-700 font-bold text-sm transition">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const BASE_URL = "https://transporte-interiorano-backend.onrender.com"; 
+        
+        const formSolicitar = document.getElementById('formSolicitarCodigo');
+        const formRedefinir = document.getElementById('formRedefinirSenha');
+        const passo1 = document.getElementById('passo1');
+        const passo2 = document.getElementById('passo2');
+        let emailTemporario = "";
+
+        // Lógica para Solicitar Código
+        formSolicitar.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSolicitar');
+            const msgErro = document.getElementById('msgErroPasso1');
+            const email = document.getElementById('inputEmail').value;
+            const cpf = document.getElementById('inputCpf').value;
+
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Aguarde...';
+            btn.disabled = true;
+            msgErro.classList.add('hidden');
+
+            try {
+                const resposta = await fetch(`${BASE_URL}/solicitar_codigo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, cpf: cpf }) // Verifique se sua API precisa do CPF aqui
+                });
+
+                const dados = await resposta.json();
+
+                if (resposta.ok || resposta.status === 200) {
+                    emailTemporario = email;
+                    passo1.classList.add('hidden');
+                    passo2.classList.remove('hidden');
+                } else {
+                    throw new Error(dados.erro || "Erro ao solicitar código.");
+                }
+            } catch (erro) {
+                msgErro.textContent = erro.message;
+                msgErro.classList.remove('hidden');
+                btn.innerHTML = 'Confirmar';
+                btn.disabled = false;
+            }
+        });
+
+        // Lógica para Redefinir Senha
+        formRedefinir.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnRedefinir');
+            const msgErro = document.getElementById('msgErroPasso2');
+            const codigo = document.getElementById('inputCodigo').value;
+            const novaSenha = document.getElementById('inputNovaSenha').value;
+            const confirmarSenha = document.getElementById('inputConfirmarSenha').value;
+
+            if(novaSenha !== confirmarSenha) {
+                msgErro.textContent = "As senhas não coincidem.";
+                msgErro.classList.remove('hidden');
+                return;
+            }
+
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Aguarde...';
+            btn.disabled = true;
+            msgErro.classList.add('hidden');
+
+            try {
+                // A rota exata depende de como está no seu backend. Ajuste se for diferente de /redefinir_senha
+                const resposta = await fetch(`${BASE_URL}/redefinir_senha`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailTemporario, codigo: codigo, nova_senha: novaSenha })
+                });
+
+                const dados = await resposta.json();
+
+                if (resposta.ok || resposta.status === 200) {
+                    alert("Senha redefinida com sucesso!");
+                    window.location.href = 'login.html';
+                } else {
+                    throw new Error(dados.erro || "Código inválido ou expirado.");
+                }
+            } catch (erro) {
+                msgErro.textContent = erro.message;
+                msgErro.classList.remove('hidden');
+                btn.innerHTML = 'Redefinir Senha';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
