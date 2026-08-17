@@ -398,22 +398,26 @@
             }
 
             try {
-                // Enviar para o backend (Ajuste a rota conforme sua API)
-                /* 
-                const resposta = await fetch(`${BASE_URL}/usuarios`, {
+                // Enviando os dados para o banco de dados via Python
+                const resposta = await fetch(`${BASE_URL}/usuarios`, { // Verifique se sua rota de cadastro no Python é /usuarios
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dadosCadastro)
                 });
-                const resultado = await resposta.json();
-                */
                 
-                // Simulação de sucesso
-                alert("Cadastro realizado com sucesso!");
-                window.location.href = 'login.html';
+                const resultado = await resposta.json();
+
+                // 201 significa "Criado com sucesso" no padrão de APIs
+                if (resposta.ok || resposta.status === 201) {
+                    alert("✅ Cadastro realizado com sucesso!");
+                    window.location.href = 'login.html';
+                } else {
+                    // Se o Python barrar por algum motivo (ex: CPF já existe)
+                    throw new Error(resultado.erro || "Não foi possível concluir o cadastro.");
+                }
                 
             } catch (error) {
-                document.getElementById('msgErroGeral').textContent = "Erro ao conectar com o servidor.";
+                document.getElementById('msgErroGeral').textContent = error.message || "Erro ao conectar com o servidor.";
                 document.getElementById('msgErroGeral').classList.remove('hidden');
                 btnConcluir.innerHTML = 'Concluir Cadastro';
                 btnConcluir.disabled = false;
