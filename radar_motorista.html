@@ -184,16 +184,21 @@
                             <input type="number" id="valorCobrado" step="0.01" value="15.00" class="w-full border-2 border-gray-300 rounded-lg p-3 text-lg font-bold text-center outline-none">
                         </div>
 
-                        <button onclick="finalizarViagem(this)" class="w-full bg-verde text-white font-bold py-4 rounded-lg shadow-md">
+                        <!-- 🟢 BOTÕES ATUALIZADOS: Receber ou Reportar Calote -->
+                        <button onclick="finalizarViagem(this, true)" class="w-full bg-verde text-white font-bold py-4 rounded-lg shadow-md mb-3 hover:bg-green-700 transition">
                             Finalizar e Receber Pagamento ✅
+                        </button>
+                        <button onclick="finalizarViagem(this, false)" class="w-full bg-red-600 text-white font-bold py-4 rounded-lg shadow-md hover:bg-red-700 transition">
+                            Não Recebi (Reportar Calote ❌)
                         </button>
                     </div>
                 `;
-            } catch (e) { alert("Erro"); }
+            } catch (e) { alert("Erro ao iniciar viagem"); }
         }
 
-        async function finalizarViagem(btn) {
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Finalizando...';
+        // 🟢 ATUALIZADO: Recebe a variável "foiPago" (true ou false) dos botões acima
+        async function finalizarViagem(btn, foiPago) {
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Aguarde...';
             btn.disabled = true;
 
             const valorDigitado = parseFloat(document.getElementById('valorCobrado').value);
@@ -202,17 +207,19 @@
                 await fetch(`${BASE_URL}/corridas/emergentes/atualizar_status/${corridaAtivaId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ status: "Finalizada", pago: true, valor_corrida: valorDigitado })
+                    body: JSON.stringify({ status: "Finalizada", pago: foiPago, valor_corrida: valorDigitado })
                 });
                 
-                alert("Corrida concluída! Recebimento confirmado.");
+                if (foiPago) {
+                    alert("Corrida concluída! Recebimento confirmado.");
+                } else {
+                    alert("🚨 Corrida encerrada. Calote reportado! O passageiro foi bloqueado imediatamente da plataforma.");
+                }
                 
-                // Recarrega a página. Como deixamos o radar 'true' na memória, 
-                // ele já volta pra tela varrendo o radar automaticamente!
                 window.location.reload(); 
             } catch (e) { 
-                alert("Erro");
-                btn.innerHTML = "Finalizar e Receber Pagamento ✅";
+                alert("Erro de comunicação com o servidor.");
+                btn.innerHTML = foiPago ? "Finalizar e Receber Pagamento ✅" : "Não Recebi (Reportar Calote ❌)";
                 btn.disabled = false;
             }
         }
