@@ -11,8 +11,8 @@
             theme: {
                 extend: { 
                     colors: { 
-                        azul: '#0056b3', /* Cor exata do botão Viagem Programada do app */
-                        verde: '#2e7d32', /* Cor exata do botão Corrida Emergencial do app */
+                        azul: '#0056b3', 
+                        verde: '#2e7d32', 
                         fundo: '#f5f5f5'
                     } 
                 }
@@ -22,27 +22,23 @@
 </head>
 <body class="bg-gray-200 flex items-center justify-center min-h-screen">
 
-    <!-- Container simulando a tela do celular -->
     <div class="bg-fundo w-full max-w-sm min-h-[700px] shadow-2xl relative overflow-hidden flex flex-col">
         
-        <!-- Header / Topbar simulado (igual ao Android) -->
+        <!-- Header -->
         <div class="bg-fundo p-4 flex items-center">
             <button onclick="logout()" class="text-azul hover:text-blue-800 transition">
                 <i class="fa-solid fa-xmark text-2xl"></i>
             </button>
         </div>
 
-        <!-- Conteúdo Principal -->
         <div class="flex-1 px-6 py-2 flex flex-col items-center">
             
             <h2 class="text-[22px] font-bold text-azul mb-8 text-center tracking-tight">
                 Como deseja viajar hoje?
             </h2>
 
-            <!-- Saudação Dinâmica (Opcional, mas legal para o MVP) -->
             <p id="saudacao" class="text-sm text-gray-500 font-semibold mb-6 w-full text-center hidden"></p>
 
-            <!-- Botões Menores -->
             <button onclick="window.location.href='perfil.html'" 
                 class="w-full bg-azul text-white font-bold py-3.5 rounded-[8px] mb-4 shadow-sm hover:bg-blue-700 transition">
                 Ver Meu Perfil
@@ -53,7 +49,6 @@
                 Ver Histórico de Viagens
             </button>
 
-            <!-- Botão Grande: Viagem Programada -->
             <button onclick="abrirViagemProgramada()" 
                 class="w-full bg-azul text-white rounded-xl p-5 mb-4 shadow-md text-left flex flex-col items-center justify-center hover:bg-blue-700 transition transform hover:scale-[1.02]">
                 <div class="flex items-center gap-2 mb-2">
@@ -65,7 +60,6 @@
                 </p>
             </button>
 
-            <!-- Botão Grande: Corrida Emergencial -->
             <button onclick="abrirCorridaEmergencial()" 
                 class="w-full bg-verde text-white rounded-xl p-5 shadow-md text-left flex flex-col items-center justify-center hover:bg-green-800 transition transform hover:scale-[1.02]">
                 <div class="flex items-center gap-2 mb-2">
@@ -76,19 +70,38 @@
                     Precisa sair agora? Encontre motoristas nos bairros próximos.
                 </p>
             </button>
-
         </div>
     </div>
 
     <script>
-        // Lógica simples de navegação baseada no LocalStorage para mostrar o nome
-        window.onload = function() {
+        const BASE_URL = "https://transporte-interiorano-backend.onrender.com";
+        const token = localStorage.getItem('tokenSessao');
+
+        if (!token) window.location.href = 'login.html';
+
+        window.onload = async function() {
             const nomeLogado = localStorage.getItem('nomeLogado');
             if(nomeLogado) {
                 const pSaudacao = document.getElementById('saudacao');
-                // Pega só o primeiro nome
                 pSaudacao.textContent = `Olá, ${nomeLogado.split(' ')[0]}!`;
                 pSaudacao.classList.remove('hidden');
+            }
+
+            // 🟢 AUDITORIA GLOBAL ANTI-CALOTE (Bloqueia o painel inteiro logo após o login)
+            try {
+                mostrarLoading("Verificando sua conta...");
+                const res = await fetch(`${BASE_URL}/pagamentos/emergente/verificar_debito`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const json = await res.json();
+                removerLoading();
+
+                if (json.bloqueado) {
+                    mostrarTelaDeBloqueio(json.detalhes);
+                }
+            } catch (e) { 
+                removerLoading();
+                console.error("Erro na auditoria financeira."); 
             }
         };
 
@@ -99,7 +112,6 @@
             }
         }
 
-        // 🟢 NOVA FUNÇÃO: Checa a memória para descobrir se o usuário é motorista
         function checarSeMotorista() {
             const dadosUsuarioStr = localStorage.getItem('dadosUsuario');
             if (dadosUsuarioStr) {
@@ -110,20 +122,109 @@
         }
 
         function abrirViagemProgramada() {
-            if (checarSeMotorista()) {
-                window.location.href = 'meus_eventos.html'; // 🟢 Agora vai para a lista de eventos criados por ele
-            } else {
-                window.location.href = 'eventos_disponiveis.html';
-            }
+            if (checarSeMotorista()) window.location.href = 'meus_eventos.html';
+            else window.location.href = 'eventos_disponiveis.html';
         }
 
         function abrirCorridaEmergencial() {
-            if (checarSeMotorista()) {
-                window.location.href = 'radar_motorista.html'; // 🟢 Vai para o Radar novo
-            } else {
-                window.location.href = 'emergencial.html';
-            }
+            if (checarSeMotorista()) window.location.href = 'radar_motorista.html';
+            else window.location.href = 'emergencial.html';
         }
+
+        // =========================================================================
+        // 🟢 FUNÇÕES DE BLOQUEIO E MULTA (Trazidas para a raiz do Painel)
+        // =========================================================================
+        function mostrarTelaDeBloqueio(detalhes) {
+            const valorFormatado = detalhes && detalhes.valor ? detalhes.valor.toFixed(2) : "15.00";
+            const corridaId = detalhes && detalhes.corrida_id ? detalhes.corrida_id : 0;
+            
+            const html = `
+                <div class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6 text-center">
+                    <i class="fa-solid fa-triangle-exclamation text-6xl text-red-600 mb-4"></i>
+                    <h2 class="text-2xl font-black text-gray-900 mb-2">Conta Suspensa</h2>
+                    <p class="text-gray-600 mb-6 leading-snug">Identificamos que uma corrida anterior (R$ ${valorFormatado}) não foi paga ao motorista.<br><br>Gere o Pix de multa administrativa (R$ 0,01) para desbloquear seu acesso imediatamente.</p>
+                    
+                    <button onclick="gerarPixMulta(${corridaId})" class="w-full bg-verde hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-bolt"></i> Gerar Pix de Desbloqueio (R$ 0,01)
+                    </button>
+                    
+                    <button onclick="logout()" class="mt-4 text-gray-500 font-bold">Sair / Trocar Conta</button>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        async function gerarPixMulta(idCorrida) {
+            mostrarLoading("Gerando código financeiro...");
+            try {
+                const res = await fetch(`${BASE_URL}/pagamentos/emergente/gerar_pix_debito`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ corrida_id: idCorrida })
+                });
+                const json = await res.json();
+                removerLoading();
+
+                if (res.ok) {
+                    mostrarModalPix(json.pix_copia_cola, idCorrida, "Desbloquear Conta", "Multa Administrativa");
+                } else {
+                    alert("Erro: " + json.erro);
+                }
+            } catch (e) { removerLoading(); alert("Erro de conexão."); }
+        }
+
+        function mostrarModalPix(codigoPix, idReferencia, titulo, subtitulo) {
+            const html = `
+                <div id="modalPixUniversal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+                    <div class="bg-gray-100 rounded-3xl shadow-2xl p-6 w-full max-w-sm text-center relative border border-gray-200">
+                        <h3 class="text-xl font-bold text-azul mb-1">${titulo}</h3>
+                        <p class="text-sm text-gray-600 mb-4">${subtitulo}</p>
+                        
+                        <div class="relative text-left mb-6">
+                            <span class="absolute -top-2 left-3 bg-gray-100 px-1 text-[10px] text-gray-500 font-bold">Copia e Cola</span>
+                            <textarea id="textoPixAreaUniv" readonly class="w-full bg-white border border-gray-300 rounded-xl p-3 text-xs text-gray-700 h-24 resize-none outline-none">${codigoPix}</textarea>
+                        </div>
+                        
+                        <button onclick="copiarPixUniv()" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-full mb-3 shadow-md flex justify-center gap-2">
+                            Copiar Código 📋
+                        </button>
+                        <button onclick="verificarPix()" class="w-full bg-verde hover:bg-green-700 text-white font-bold py-3.5 rounded-full shadow-md flex justify-center gap-2">
+                            Já Paguei / Verificar ⚡
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function copiarPixUniv() {
+            const a = document.getElementById('textoPixAreaUniv'); a.select(); document.execCommand('copy');
+            alert('Copiado!');
+        }
+
+        async function verificarPix() {
+            mostrarLoading("Verificando pagamento...");
+            try {
+                const res = await fetch(`${BASE_URL}/pagamentos/emergente/verificar_debito`, { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                });
+                const json = await res.json();
+                removerLoading();
+
+                if (json.pago || json.bloqueado === false) {
+                    alert("✅ Pagamento Confirmado! Sua conta foi desbloqueada.");
+                    window.location.reload(); 
+                } else {
+                    alert("⏳ Pagamento não identificado ainda. Tente novamente em alguns segundos.");
+                }
+            } catch (e) { removerLoading(); alert("Erro de rede"); }
+        }
+
+        function mostrarLoading(msg) {
+            const html = `<div id="globalLoading" class="fixed inset-0 bg-white bg-opacity-90 z-[999] flex flex-col items-center justify-center"><i class="fa-solid fa-spinner fa-spin text-4xl text-azul mb-3"></i><p class="font-bold text-gray-700">${msg}</p></div>`;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+        function removerLoading() { const el = document.getElementById('globalLoading'); if(el) el.remove(); }
     </script>
 </body>
 </html>
