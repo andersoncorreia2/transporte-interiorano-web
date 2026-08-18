@@ -24,7 +24,7 @@
 
         <div class="p-4 flex-1 flex flex-col relative">
             
-            <!-- TELA 1: FORMULÁRIO DE CHAMADA -->
+            <!-- 🟢 TELA 1: FORMULÁRIO DE CHAMADA -->
             <div id="telaFormulario" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex-1 flex flex-col">
                 <h2 class="text-xl font-bold text-azul mb-1">Para onde você vai? 📍</h2>
                 <p class="text-xs text-gray-500 mb-6">Solicite um motorista parceiro próximo a você.</p>
@@ -74,14 +74,14 @@
                 </button>
             </div>
 
-            <!-- TELA 2: MONITORAMENTO EM TEMPO REAL -->
+            <!-- 🟢 TELA 2: MONITORAMENTO EM TEMPO REAL -->
             <div id="telaMonitoramento" class="hidden bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex-1 flex flex-col justify-center text-center">
                 <div id="iconeMonitoramento" class="text-6xl text-azul mb-4"><i class="fa-solid fa-radar fa-spin"></i></div>
                 <h2 id="tituloMonitoramento" class="text-2xl font-black text-gray-900 mb-2">Procurando Motorista...</h2>
-                <p id="subtituloMonitoramento" class="text-sm text-gray-500 mb-2">Avisando parceiros nas proximidades.</p>
+                <p id="subtituloMonitoramento" class="text-sm text-gray-500 mb-4">Avisando parceiros nas proximidades.</p>
                 
-                <!-- 🟢 ÁREA DO CRONÔMETRO DE CANCELAMENTO (Invisível por padrão) -->
-                <div id="areaCronometroCancelamento" class="hidden mb-6 bg-gray-50 border border-gray-200 py-2 rounded-lg">
+                <!-- ⏱️ ÁREA DO CRONÔMETRO DE CANCELAMENTO -->
+                <div id="areaCronometroCancelamento" class="hidden mb-6 bg-red-50 border border-red-100 py-3 rounded-xl shadow-inner">
                     <!-- O JavaScript preencherá o reloginho aqui -->
                 </div>
                 
@@ -99,7 +99,7 @@
         </div>
     </div>
 
-    <!-- MODAL ESCOLHER PAGAMENTO -->
+    <!-- 🟢 MODAL ESCOLHER PAGAMENTO -->
     <div id="modalPagamento" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end justify-center">
         <div class="bg-white rounded-t-3xl w-full max-w-sm p-6 shadow-2xl animate-[slideUp_0.3s_ease-out]">
             <h3 class="text-lg font-bold text-gray-800 mb-4">Selecione o Método</h3>
@@ -146,8 +146,9 @@
                 
                 if (json.bloqueado) {
                     mostrarTelaDeBloqueio(json.detalhes);
-                    return;
+                    return; 
                 }
+
                 recuperarEstado();
             } catch (e) { console.error("Erro na auditoria financeira."); }
         };
@@ -203,7 +204,9 @@
                     return alert("Erro: " + json.erro);
                 }
 
-                if (pagamentoSelecionado === 'Dinheiro') {
+                const ehDinheiro = pagamentoSelecionado === 'Dinheiro';
+
+                if (ehDinheiro) {
                     removerLoading();
                     corridaGlobalId = json.corrida_id;
                     iniciarMonitoramento(); 
@@ -217,7 +220,7 @@
                     removerLoading();
 
                     if (resPix.ok) {
-                        mostrarModalPix(jsonPix.pix_copia_cola, json.corrida_id, "Pagamento Antecipado", `Confirme o pagamento via ${pagamentoSelecionado}.`, "verificar_pagamento_corrida");
+                        mostrarModalPix(jsonPix.pix_copia_cola, json.corrida_id, "Pagamento Antecipado", `Para chamar o motorista, confirme o pagamento via ${pagamentoSelecionado}.`, "verificar_pagamento_corrida");
                     } else { alert("Erro ao gerar link de pagamento."); }
                 }
 
@@ -256,6 +259,8 @@
                 const titulo = document.getElementById('tituloMonitoramento');
                 const subtitulo = document.getElementById('subtituloMonitoramento');
                 const infoMot = document.getElementById('infoMotorista');
+                
+                // 🟢 ELEMENTO DO CRONÔMETRO AQUI
                 const areaCronometro = document.getElementById('areaCronometroCancelamento');
 
                 if (statusMotorista === "Procurando") {
@@ -277,7 +282,7 @@
                     document.getElementById('placaMot').textContent = dados.placa || "ABC-1234";
                     document.getElementById('btnCancelarCorrida').textContent = "Cancelar Viagem ❌";
                     
-                    // 🟢 GRAVA A HORA DO ACEITE NA MEMÓRIA PARA O CRONÔMETRO
+                    // ⏱️ GATILHO DO CRONÔMETRO
                     let limiteEpoch = localStorage.getItem('limiteCancelamento_' + corridaGlobalId);
                     if (!limiteEpoch) {
                         limiteEpoch = Date.now() + 180000; // 3 minutos exatos em milissegundos
@@ -292,7 +297,7 @@
                     subtitulo.textContent = "Dirigindo até o destino final com segurança.";
                     
                     document.getElementById('btnCancelarCorrida').classList.add('hidden'); 
-                    areaCronometro.classList.add('hidden'); 
+                    areaCronometro.classList.add('hidden'); // Oculta o cronômetro durante a viagem
                 } 
                 else if (statusMotorista === "Finalizada") {
                     clearInterval(loopMonitoramento);
@@ -314,7 +319,7 @@
             } catch(e) {}
         }
 
-        // 🟢 LOOP INDEPENDENTE QUE CALCULA O CRONÔMETRO VISUAL (Roda a cada segundo)
+        // 🟢 LOOP DO CRONÔMETRO VISUAL (Roda a cada 1 segundo independente da internet)
         setInterval(() => {
             const areaCronometro = document.getElementById('areaCronometroCancelamento');
             if(areaCronometro && !areaCronometro.classList.contains('hidden') && corridaGlobalId) {
@@ -327,11 +332,15 @@
                         const min = Math.floor(diff / 60000);
                         const sec = Math.floor((diff % 60000) / 1000);
                         
-                        // Muda para vermelho quando faltam 30 segundos
-                        const colorClass = diff > 30000 ? "text-gray-600" : "text-red-500";
-                        areaCronometro.innerHTML = `<p class="text-[12px] font-bold ${colorClass}">Tempo limite para cancelamento gratuito: ${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}</p>`;
+                        // Muda a cor quando falta pouco tempo
+                        const colorClass = diff > 30000 ? "text-gray-800" : "text-red-600";
+                        
+                        areaCronometro.innerHTML = `
+                            <p class="text-[11px] uppercase tracking-wide font-bold text-gray-500 mb-1">Cancelamento Gratuito</p>
+                            <p class="text-2xl font-black ${colorClass}"><i class="fa-regular fa-clock"></i> ${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}</p>
+                        `;
                     } else {
-                        areaCronometro.innerHTML = `<p class="text-[12px] font-bold text-red-600">⚠️ O cancelamento agora poderá gerar taxas de deslocamento.</p>`;
+                        areaCronometro.innerHTML = `<p class="text-xs font-bold text-red-600 px-2">⚠️ O cancelamento agora poderá gerar taxas de deslocamento.</p>`;
                     }
                 }
             }
@@ -438,7 +447,7 @@
                     if(tipo !== "verificar_debito") {
                         corridaGlobalId = id;
                         document.getElementById('modalPixUniversal').remove();
-                        iniciarMonitoramento();
+                        iniciarMonitoramento(); 
                     } else { window.location.reload(); }
                 } else { alert("⏳ Pagamento não identificado ainda."); }
             } catch (e) { removerLoading(); alert("Erro de rede"); }
