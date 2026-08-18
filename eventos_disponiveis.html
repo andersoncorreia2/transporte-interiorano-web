@@ -51,14 +51,14 @@
             const loading = document.getElementById('loading');
 
             try {
-                // FETCH REAL NO BANCO DE DADOS
-                // Usamos encodeURIComponent no CPF para garantir segurança na URL (pontos/traços)
-                const resposta = await fetch(`${BASE_URL}/caronas/${encodeURIComponent(cpfLogado)}`, {
-                    method: 'GET',
-                    cache: 'no-store' 
-                });
-                
+                // 1. Busca as viagens ativas
+                const resposta = await fetch(`${BASE_URL}/caronas/${encodeURIComponent(cpfLogado)}`, { cache: 'no-store' });
                 const caronas = await resposta.json();
+
+                // 2. Busca todas as solicitações para fazer a matemática das vagas
+                const respostaSol = await fetch(`${BASE_URL}/solicitacoes`, { cache: 'no-store' });
+                const todasSolicitacoes = await respostaSol.json();
+
                 loading.classList.add('hidden');
 
                 if (caronas.erro || caronas.length === 0) {
@@ -74,10 +74,24 @@
 
                 // DESENHA OS CARDS
                 caronas.forEach(carona => {
-                    const vagasOcupadas = parseInt(carona.vagas) === 0; 
+                    // 🟢 MATEMÁTICA DE VAGAS IDÊNTICA AO KOTLIN
+                    const pedidosDestaCarona = todasSolicitacoes.filter(s => s.carona_id === carona.id);
                     
+                    const qtdOcupadas = pedidosDestaCarona.filter(s => {
+                        const st = (s.status || "").toLowerCase();
+                        return st.includes("aceito") || st.includes("pendente") || st.includes("taxa paga") || st.includes("carencia");
+                    }).length;
+
+                    const totalVagas = parseInt(carona.vagas) || 4;
+                    const vagasRestantes = totalVagas - qtdOcupadas;
+                    const esgotado = vagasRestantes <= 0;
+
+                    // Ajuste de cores baseado na lotação
+                    const corVaga = esgotado ? "text-red-600" : "text-verde";
+                    const textoVaga = esgotado ? "Lotação Esgotada" : `${vagasRestantes} Vagas Livres`;
+
                     const cardHTML = `
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative">
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative mb-4">
                             <div class="p-4 flex items-center border-b border-gray-100 bg-gray-50/50">
                                 <div class="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 mr-4 shadow-inner">
                                     <i class="fa-solid fa-user text-xl"></i>
@@ -120,9 +134,9 @@
                                     Partida: ${carona.horario}
                                 </div>
 
-                                <div class="flex items-center gap-3 text-verde font-bold text-sm">
+                                <div class="flex items-center gap-3 ${corVaga} font-bold text-sm">
                                     <i class="fa-solid fa-user-group text-blue-500"></i>
-                                    Vagas Livres: ${carona.vagas}
+                                    ${textoVaga}
                                 </div>
 
                                 <div class="flex items-center gap-3 text-azul font-bold text-sm pb-2">
@@ -131,9 +145,9 @@
                                 </div>
 
                                 <button onclick="solicitarVaga(${carona.id})" 
-                                    ${vagasOcupadas ? 'disabled' : ''}
-                                    class="w-full ${vagasOcupadas ? 'bg-gray-400 cursor-not-allowed' : 'bg-verde hover:bg-green-700'} text-white font-bold py-3.5 rounded-xl transition shadow-md flex justify-center items-center gap-2 mt-2">
-                                    Solicitar Vaga <i class="fa-solid fa-car-side"></i>
+                                    ${esgotado ? 'disabled' : ''}
+                                    class="w-full ${esgotado ? 'bg-gray-400 cursor-not-allowed' : 'bg-verde hover:bg-green-700'} text-white font-bold py-3.5 rounded-xl transition shadow-md flex justify-center items-center gap-2 mt-2">
+                                    ${esgotado ? 'Vagas Esgotadas' : 'Solicitar Vaga <i class="fa-solid fa-car-side"></i>'}
                                 </button>
                             </div>
                         </div>
@@ -147,7 +161,8 @@
         };
 
         function solicitarVaga(idCarona) {
-            alert("Aguardando rota de criação de solicitação para a vaga ID: " + idCarona);
+            // Em breve: Conectaremos à API de Solicitações!
+            alert("Aguardando integração para solicitar a vaga (ID: " + idCarona + ")");
         }
     </script>
 </body>
