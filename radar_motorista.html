@@ -47,6 +47,17 @@
 
         let loopRadar = null;
         let corridaAtivaId = null;
+
+        // 🟢 1. RESTAURA A MEMÓRIA AO ABRIR A PÁGINA
+        window.onload = function() {
+            const radarMemoria = localStorage.getItem('radarAtivoMotorista');
+            
+            // Se o motorista deixou ligado na última vez, religa o botão e aciona a função
+            if (radarMemoria === 'true') {
+                document.getElementById('toggleRadar').checked = true;
+                alternarRadar(); 
+            }
+        };
         
         async function alternarRadar() {
             const isLigado = document.getElementById('toggleRadar').checked;
@@ -54,6 +65,9 @@
             const area = document.getElementById('areaChamados');
             
             if(isLigado) {
+                // 🟢 2. SALVA "LIGADO" NA MEMÓRIA DO NAVEGADOR
+                localStorage.setItem('radarAtivoMotorista', 'true');
+
                 textoRadar.textContent = "Radar (Ativado)";
                 textoRadar.classList.replace('text-gray-500', 'text-azul');
                 area.innerHTML = `
@@ -73,6 +87,9 @@
                 loopRadar = setInterval(buscarChamados, 10000);
 
             } else {
+                // 🟢 3. SALVA "DESLIGADO" NA MEMÓRIA DO NAVEGADOR
+                localStorage.setItem('radarAtivoMotorista', 'false');
+
                 textoRadar.textContent = "Radar (Desativado)";
                 textoRadar.classList.replace('text-azul', 'text-gray-500');
                 area.innerHTML = `
@@ -84,18 +101,20 @@
         }
 
         async function buscarChamados() {
-            if(corridaAtivaId) return; // Se já aceitou uma corrida, para de buscar outras
+            if(corridaAtivaId) return; // Se já aceitou, para de listar novos
 
             try {
+                // Adicionado cache: 'no-store' para garantir que vem dado novo do banco
                 const resposta = await fetch(`${BASE_URL}/corridas/emergentes/disponiveis`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    cache: 'no-store'
                 });
                 const chamados = await resposta.json();
                 
                 const area = document.getElementById('areaChamados');
 
                 if (chamados.length > 0) {
-                    const c = chamados[0]; // Pega o primeiro
+                    const c = chamados[0]; // Pega o mais recente
                     area.innerHTML = `
                         <div class="bg-white p-5 rounded-xl border-2 border-azul shadow-lg text-left">
                             <h3 class="text-red-600 font-bold text-sm mb-2"><i class="fa-solid fa-bell"></i> CORRIDA EMERGENTE DETECTADA!</h3>
@@ -105,7 +124,7 @@
                             <p class="text-sm font-bold text-gray-800">Para:</p>
                             <p class="text-xs text-gray-600 mb-4">${c.endereco_destino}</p>
 
-                            <button onclick="aceitarCorrida(${c.id})" class="w-full bg-verde text-white font-bold py-3 rounded-lg hover:bg-green-700 transition">
+                            <button onclick="aceitarCorrida(${c.id})" class="w-full bg-verde text-white font-bold py-3 rounded-lg hover:bg-green-700 transition shadow-md">
                                 Aceitar Chamado Agora 🗺️
                             </button>
                         </div>
@@ -128,7 +147,7 @@
                 
                 if(res.ok) {
                     corridaAtivaId = id;
-                    clearInterval(loopRadar); // Para de procurar
+                    clearInterval(loopRadar); // Para o radar de buscar outras pessoas
                     
                     document.getElementById('areaChamados').innerHTML = `
                         <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm text-left h-full flex flex-col justify-center">
@@ -165,7 +184,7 @@
                             <input type="number" id="valorCobrado" step="0.01" value="15.00" class="w-full border-2 border-gray-300 rounded-lg p-3 text-lg font-bold text-center outline-none">
                         </div>
 
-                        <button onclick="finalizarViagem()" class="w-full bg-verde text-white font-bold py-4 rounded-lg shadow-md">
+                        <button onclick="finalizarViagem(this)" class="w-full bg-verde text-white font-bold py-4 rounded-lg shadow-md">
                             Finalizar e Receber Pagamento ✅
                         </button>
                     </div>
@@ -173,7 +192,10 @@
             } catch (e) { alert("Erro"); }
         }
 
-        async function finalizarViagem() {
+        async function finalizarViagem(btn) {
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Finalizando...';
+            btn.disabled = true;
+
             const valorDigitado = parseFloat(document.getElementById('valorCobrado').value);
             
             try {
@@ -184,8 +206,15 @@
                 });
                 
                 alert("Corrida concluída! Recebimento confirmado.");
-                window.location.href = "painel.html"; // Volta pro painel
-            } catch (e) { alert("Erro"); }
+                
+                // Recarrega a página. Como deixamos o radar 'true' na memória, 
+                // ele já volta pra tela varrendo o radar automaticamente!
+                window.location.reload(); 
+            } catch (e) { 
+                alert("Erro");
+                btn.innerHTML = "Finalizar e Receber Pagamento ✅";
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
