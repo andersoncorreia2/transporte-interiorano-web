@@ -77,41 +77,55 @@
         const BASE_URL = "https://transporte-interiorano-backend.onrender.com"; 
 
         window.onload = async function() {
-            // No seu login, você salvou apenas o CPF e Nome soltos. 
-            // Para ter todos os dados sem chamar o banco de novo toda hora, 
-            // o ideal é que o login também salve um objeto com as infos, mas por ora faremos um fetch.
-            
             const cpfLogado = localStorage.getItem('cpfLogado');
             if(!cpfLogado) window.location.href = 'login.html';
 
+            // 1. CARREGA OS DADOS ESTÁTICOS DA MEMÓRIA (Igual o App Android faz)
+            const dadosUsuarioStr = localStorage.getItem('dadosUsuario');
+            let isMotorista = false;
+
+            if (dadosUsuarioStr) {
+                const dadosLocal = JSON.parse(dadosUsuarioStr);
+                
+                document.getElementById('nomeUsuario').textContent = dadosLocal.nome;
+                document.getElementById('emailUsuario').textContent = dadosLocal.email;
+                
+                let dataFormatada = dadosLocal.data_cadastro || "15/06/2026";
+                if(dataFormatada.includes('-')) {
+                    const [ano, mes, dia] = dataFormatada.split(' ')[0].split('-');
+                    dataFormatada = `${dia}/${mes}/${ano}`;
+                }
+                document.getElementById('dataCadastro').textContent = dataFormatada;
+                
+                // Validação segura do veículo
+                isMotorista = dadosLocal.veiculo && dadosLocal.veiculo.trim() !== "";
+                document.getElementById('tipoConta').textContent = isMotorista ? "Motorista" : "Solicitante/Passageiro";
+
+                if(isMotorista) {
+                    document.getElementById('cardPassageiros').classList.remove('hidden');
+                }
+            } else {
+                // Se por acaso a pessoa entrou direto sem o pacote de dados do login novo, exibe o nome salvo
+                document.getElementById('nomeUsuario').textContent = localStorage.getItem('nomeLogado') || "Usuário";
+            }
+
+            // 2. BUSCA NO BANCO APENAS AS MÉTRICAS DE CORRIDAS (Única coisa que o model retorna pelo CPF)
             try {
-                const resposta = await fetch(`${BASE_URL}/usuarios_por_cpf/${cpfLogado}`);
-                const dados = await resposta.json();
+                const resposta = await fetch(`${BASE_URL}/usuarios_por_cpf/${cpfLogado}`, {
+                    method: 'GET',
+                    cache: 'no-store'
+                });
+                const metricas = await resposta.json();
 
-                if(!dados.erro) {
-                    document.getElementById('nomeUsuario').textContent = dados.nome;
-                    document.getElementById('emailUsuario').textContent = dados.email;
+                if(!metricas.erro) {
+                    document.getElementById('corridasRealizadas').textContent = `${metricas.corridas_realizadas || 0} corridas`;
                     
-                    // Converte data no padrão do seu app (dd/MM/yyyy)
-                    let dataFormatada = dados.data_cadastro || "15/06/2026";
-                    if(dataFormatada.includes('-')) {
-                        const [ano, mes, dia] = dataFormatada.split(' ')[0].split('-');
-                        dataFormatada = `${dia}/${mes}/${ano}`;
-                    }
-                    document.getElementById('dataCadastro').textContent = dataFormatada;
-                    
-                    document.getElementById('corridasRealizadas').textContent = `${dados.corridas_realizadas || 0} corridas`;
-
-                    const isMotorista = dados.veiculo && dados.veiculo.trim() !== "";
-                    document.getElementById('tipoConta').textContent = isMotorista ? "Motorista" : "Solicitante/Passageiro";
-
                     if(isMotorista) {
-                        document.getElementById('cardPassageiros').classList.remove('hidden');
-                        document.getElementById('passageirosConduzidos').textContent = `${dados.passageiros_conduzidos || 0} passageiros`;
+                        document.getElementById('passageirosConduzidos').textContent = `${metricas.passageiros_conduzidos || 0} passageiros`;
                     }
                 }
             } catch(e) {
-                console.error("Erro ao buscar dados do perfil", e);
+                console.error("Erro ao buscar métricas de corrida", e);
             }
         };
 

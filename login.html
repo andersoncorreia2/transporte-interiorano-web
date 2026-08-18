@@ -114,6 +114,8 @@
                     localStorage.setItem('tokenSessao', dados.token);
                     localStorage.setItem('cpfLogado', dados.usuario.cpf);
                     localStorage.setItem('nomeLogado', dados.usuario.nome);
+                    // 🟢 ADICIONE ESTA LINHA: Guarda a ficha completa na memória do navegador
+                    localStorage.setItem('dadosUsuario', JSON.stringify(dados.usuario));
                     
                     btn.innerHTML = '<i class="fa-solid fa-check"></i> Sucesso!';
                     btn.classList.replace('bg-verde', 'bg-azul');
