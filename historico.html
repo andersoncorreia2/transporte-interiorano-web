@@ -44,14 +44,25 @@
             const loading = document.getElementById('loading');
 
             try {
-                // Busca primeiro o usuário para saber se é motorista ou passageiro
-                const respUser = await fetch(`${BASE_URL}/usuarios_por_cpf/${cpfLogado}`);
-                const user = await respUser.json();
-                const isMotorista = user.veiculo && user.veiculo.trim() !== "";
+                // 🟢 LÊ DA MEMÓRIA SE É MOTORISTA (Igual fizemos no Perfil)
+                let isMotorista = false;
+                const dadosUsuarioStr = localStorage.getItem('dadosUsuario');
+                
+                if (dadosUsuarioStr) {
+                    const dadosLocal = JSON.parse(dadosUsuarioStr);
+                    // Validação segura para evitar nulos
+                    isMotorista = dadosLocal.veiculo !== null && dadosLocal.veiculo !== undefined && dadosLocal.veiculo.trim() !== "";
+                }
 
-                // Chama a rota de histórico correto com base no tipo de usuário
+                // Chama a rota de histórico correta baseada na memória
                 const rota = isMotorista ? 'historico_motorista' : 'historico_passageiro';
-                const resposta = await fetch(`${BASE_URL}/corridas/emergentes/${rota}/${cpfLogado}`);
+                
+                // Faz a busca no banco ignorando o cache
+                const resposta = await fetch(`${BASE_URL}/corridas/emergentes/${rota}/${cpfLogado}`, {
+                    method: 'GET',
+                    cache: 'no-store'
+                });
+                
                 const corridas = await resposta.json();
 
                 loading.classList.add('hidden');
@@ -65,10 +76,8 @@
                     return;
                 }
 
-                // Desenha os cards verdes baseados na image_2f8663.png
+                // Desenha os cards
                 corridas.forEach(corrida => {
-                    
-                    // Cálculo simplificado de tempo para o front-end (assumindo formato DD/MM/YYYY HH:mm)
                     let tempoViagem = "-- min";
                     try {
                         if(corrida.data_criacao && corrida.data_finalizacao) {
@@ -87,7 +96,7 @@
                     } catch(e){}
 
                     const cardHTML = `
-                        <div class="bg-verdeSuave rounded-xl p-4 shadow-sm">
+                        <div class="bg-verdeSuave rounded-xl p-4 shadow-sm border border-[#C8E6C9]">
                             <h3 class="font-bold text-verdeForte text-[16px] mb-2 flex items-center justify-between">
                                 <span>Corrida Emergencial ⚡</span>
                                 ${isMotorista ? `<span class="text-[11px] text-gray-600 font-normal">Passageiro: ${corrida.passageiro_nome || 'N/A'}</span>` : ''}
