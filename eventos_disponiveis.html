@@ -160,9 +160,50 @@
             }
         };
 
-        function solicitarVaga(idCarona) {
-            // Em breve: Conectaremos à API de Solicitações!
-            alert("Aguardando integração para solicitar a vaga (ID: " + idCarona + ")");
+        async function solicitarVaga(idCarona) {
+            // Pede confirmação antes de disparar
+            if (!confirm("Deseja realmente solicitar uma vaga neste evento?")) {
+                return;
+            }
+
+            // Puxa os dados do passageiro da memória
+            const nomePassageiro = localStorage.getItem('nomeLogado');
+            const cpfLogado = localStorage.getItem('cpfLogado');
+            
+            if (!nomePassageiro || !cpfLogado) {
+                alert("Erro: Dados do usuário não encontrados. Faça login novamente.");
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const cpfLimpo = cpfLogado.replace(/\D/g, '');
+
+            const payload = {
+                carona_id: idCarona,
+                passageiro: nomePassageiro,
+                passageiro_cpf: cpfLimpo
+            };
+
+            try {
+                // Chama a rota de criação de solicitação idêntica ao Android
+                const resposta = await fetch(`${BASE_URL}/solicitacoes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (resposta.ok || resposta.status === 200 || resposta.status === 201) {
+                    alert("✅ Vaga solicitada com sucesso! Aguarde a confirmação do motorista.");
+                    // Recarrega a página para atualizar o número de vagas instantaneamente
+                    window.location.reload();
+                } else {
+                    const jsonErro = await resposta.json();
+                    alert("Erro ao solicitar vaga: " + (jsonErro.erro || "Verifique se você já solicitou essa carona."));
+                }
+            } catch (erro) {
+                console.error("Erro na requisição:", erro);
+                alert("Falha de conexão com o servidor.");
+            }
         }
     </script>
 </body>
