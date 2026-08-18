@@ -44,21 +44,20 @@
             const loading = document.getElementById('loading');
 
             try {
-                // 🟢 LÊ DA MEMÓRIA SE É MOTORISTA (Igual fizemos no Perfil)
                 let isMotorista = false;
                 const dadosUsuarioStr = localStorage.getItem('dadosUsuario');
                 
                 if (dadosUsuarioStr) {
                     const dadosLocal = JSON.parse(dadosUsuarioStr);
-                    // Validação segura para evitar nulos
                     isMotorista = dadosLocal.veiculo !== null && dadosLocal.veiculo !== undefined && dadosLocal.veiculo.trim() !== "";
                 }
 
-                // Chama a rota de histórico correta baseada na memória
                 const rota = isMotorista ? 'historico_motorista' : 'historico_passageiro';
                 
-                // Faz a busca no banco ignorando o cache
-                const resposta = await fetch(`${BASE_URL}/corridas/emergentes/${rota}/${cpfLogado}`, {
+                // 🟢 A CORREÇÃO: Limpamos o CPF para enviar APENAS NÚMEROS para o backend
+                const cpfLimpo = cpfLogado.replace(/\D/g, '');
+
+                const resposta = await fetch(`${BASE_URL}/corridas/emergentes/${rota}/${cpfLimpo}`, {
                     method: 'GET',
                     cache: 'no-store'
                 });
@@ -76,7 +75,6 @@
                     return;
                 }
 
-                // Desenha os cards
                 corridas.forEach(corrida => {
                     let tempoViagem = "-- min";
                     try {
