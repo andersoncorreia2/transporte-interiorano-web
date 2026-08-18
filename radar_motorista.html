@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar | Transporte Interiorano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { azul: '#0056b3', verde: '#2e7d32', fundo: '#f5f5f5' } } } }
+    </script>
+</head>
+<body class="bg-gray-200 flex items-center justify-center min-h-screen">
+
+    <div class="bg-fundo w-full max-w-sm min-h-[700px] shadow-2xl relative flex flex-col overflow-hidden">
+        
+        <div class="bg-azul text-white p-4 flex items-center shadow-md z-10">
+            <button onclick="window.location.href='painel.html'" class="hover:bg-blue-800 p-2 rounded-full transition mr-3">
+                <i class="fa-solid fa-arrow-left text-xl"></i>
+            </button>
+            <h1 class="text-[20px] font-bold tracking-wide">Radar de Emergências</h1>
+        </div>
+
+        <div class="p-6 flex-1 flex flex-col">
+            <div class="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+                <div>
+                    <span id="textoRadar" class="text-sm font-bold text-gray-500">Radar (Desativado)</span>
+                    <p class="text-[10px] text-gray-400 mt-1">Ligue para receber chamados</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggleRadar" class="sr-only peer" onchange="alternarRadar()">
+                    <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-azul"></div>
+                </label>
+            </div>
+
+            <div id="areaChamados" class="flex-1 overflow-y-auto space-y-4 text-center">
+                <i class="fa-solid fa-satellite-dish text-6xl text-gray-300 mt-10"></i>
+                <p class="text-gray-500 font-bold mt-4">Aguardando você ficar online...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = "https://transporte-interiorano-backend.onrender.com";
+        const token = localStorage.getItem('tokenSessao');
+        if (!token) window.location.href = 'login.html';
+
+        let loopRadar = null;
+        let corridaAtivaId = null;
+        
+        async function alternarRadar() {
+            const isLigado = document.getElementById('toggleRadar').checked;
+            const textoRadar = document.getElementById('textoRadar');
+            const area = document.getElementById('areaChamados');
+            
+            if(isLigado) {
+                textoRadar.textContent = "Radar (Ativado)";
+                textoRadar.classList.replace('text-gray-500', 'text-azul');
+                area.innerHTML = `
+                    <i class="fa-solid fa-radar fa-spin text-5xl text-azul mt-10"></i>
+                    <p class="text-azul font-bold mt-4">Buscando passageiros na sua região...</p>
+                `;
+                
+                // Avisa o servidor que está online (Emergencial)
+                await fetch(`${BASE_URL}/usuarios/alterar_modalidade`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ modalidade: "Emergencial" })
+                });
+
+                // Inicia o Loop de busca a cada 10s
+                buscarChamados();
+                loopRadar = setInterval(buscarChamados, 10000);
+
+            } else {
+                textoRadar.textContent = "Radar (Desativado)";
+                textoRadar.classList.replace('text-azul', 'text-gray-500');
+                area.innerHTML = `
+                    <i class="fa-solid fa-satellite-dish text-6xl text-gray-300 mt-10"></i>
+                    <p class="text-gray-500 font-bold mt-4">Radar desligado.</p>
+                `;
+                clearInterval(loopRadar);
+            }
+        }
+
+        async function buscarChamados() {
+            if(corridaAtivaId) return; // Se já aceitou uma corrida, para de buscar outras
+
+            try {
+                const resposta = await fetch(`${BASE_URL}/corridas/emergentes/disponiveis`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const chamados = await resposta.json();
+                
+                const area = document.getElementById('areaChamados');
+
+                if (chamados.length > 0) {
+                    const c = chamados[0]; // Pega o primeiro
+                    area.innerHTML = `
+                        <div class="bg-white p-5 rounded-xl border-2 border-azul shadow-lg text-left">
+                            <h3 class="text-red-600 font-bold text-sm mb-2"><i class="fa-solid fa-bell"></i> CORRIDA EMERGENTE DETECTADA!</h3>
+                            <p class="text-sm font-bold text-gray-800">Saindo de:</p>
+                            <p class="text-xs text-gray-600 mb-2">${c.endereco_origem}</p>
+                            
+                            <p class="text-sm font-bold text-gray-800">Para:</p>
+                            <p class="text-xs text-gray-600 mb-4">${c.endereco_destino}</p>
+
+                            <button onclick="aceitarCorrida(${c.id})" class="w-full bg-verde text-white font-bold py-3 rounded-lg hover:bg-green-700 transition">
+                                Aceitar Chamado Agora 🗺️
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    area.innerHTML = `
+                        <i class="fa-solid fa-radar fa-spin text-5xl text-azul mt-10"></i>
+                        <p class="text-azul font-bold mt-4">Buscando passageiros na sua região...</p>
+                    `;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function aceitarCorrida(id) {
+            try {
+                const res = await fetch(`${BASE_URL}/corridas/emergentes/aceitar/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if(res.ok) {
+                    corridaAtivaId = id;
+                    clearInterval(loopRadar); // Para de procurar
+                    
+                    document.getElementById('areaChamados').innerHTML = `
+                        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm text-left h-full flex flex-col justify-center">
+                            <h3 class="text-verde font-bold text-lg mb-2 text-center">Indo ao encontro do Passageiro</h3>
+                            <p class="text-sm text-gray-600 text-center mb-6">Siga para o local de embarque.</p>
+                            
+                            <button onclick="iniciarViagem()" class="w-full bg-blue-500 text-white font-bold py-4 rounded-lg shadow-md mb-3">
+                                Passageiro a Bordo (Iniciar Viagem)
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    alert("Alguém foi mais rápido ou o passageiro cancelou!");
+                    buscarChamados();
+                }
+            } catch(e) { alert("Erro de conexão"); }
+        }
+
+        async function iniciarViagem() {
+            try {
+                await fetch(`${BASE_URL}/corridas/emergentes/atualizar_status/${corridaAtivaId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status: "Em Viagem", pago: true, valor_corrida: 0.0 })
+                });
+
+                document.getElementById('areaChamados').innerHTML = `
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm text-left h-full flex flex-col justify-center">
+                        <h3 class="text-azul font-bold text-xl mb-2 text-center">Viagem em Andamento 🚗</h3>
+                        <p class="text-sm text-gray-600 text-center mb-6">Dirija com segurança até o destino final.</p>
+                        
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Confirme o valor cobrado (R$):</label>
+                            <input type="number" id="valorCobrado" step="0.01" value="15.00" class="w-full border-2 border-gray-300 rounded-lg p-3 text-lg font-bold text-center outline-none">
+                        </div>
+
+                        <button onclick="finalizarViagem()" class="w-full bg-verde text-white font-bold py-4 rounded-lg shadow-md">
+                            Finalizar e Receber Pagamento ✅
+                        </button>
+                    </div>
+                `;
+            } catch (e) { alert("Erro"); }
+        }
+
+        async function finalizarViagem() {
+            const valorDigitado = parseFloat(document.getElementById('valorCobrado').value);
+            
+            try {
+                await fetch(`${BASE_URL}/corridas/emergentes/atualizar_status/${corridaAtivaId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status: "Finalizada", pago: true, valor_corrida: valorDigitado })
+                });
+                
+                alert("Corrida concluída! Recebimento confirmado.");
+                window.location.href = "painel.html"; // Volta pro painel
+            } catch (e) { alert("Erro"); }
+        }
+    </script>
+</body>
+</html>

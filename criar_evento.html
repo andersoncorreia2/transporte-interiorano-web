@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Evento | Transporte Interiorano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { azul: '#0056b3', verde: '#2e7d32', fundo: '#f5f5f5' } } } }
+    </script>
+</head>
+<body class="bg-gray-200 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white w-full max-w-sm min-h-[700px] shadow-2xl relative flex flex-col overflow-y-auto">
+        
+        <div class="bg-white p-4 flex items-center sticky top-0 z-10 border-b border-gray-100">
+            <button onclick="window.location.href='painel.html'" class="text-azul p-2 hover:bg-gray-100 rounded-full transition mr-3">
+                <i class="fa-solid fa-arrow-left text-xl"></i>
+            </button>
+            <h1 class="text-[20px] font-bold text-azul">Novo Evento/Corrida</h1>
+        </div>
+
+        <form id="formCriar" class="px-6 py-6 space-y-4 flex-1 flex flex-col">
+            <p class="text-gray-500 mb-2">Para onde vamos hoje?</p>
+
+            <div class="space-y-4">
+                <input type="text" id="nomeEvento" required placeholder="Nome do Evento (Ex: Culto de Domingo)" class="w-full border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:border-azul">
+                <input type="text" id="cidadeOrigem" required placeholder="Cidade de Origem (Ex: Caruaru)" class="w-full border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:border-azul">
+                <input type="text" id="enderecoOrigem" required placeholder="Endereço de Origem (Rua, Bairro)" class="w-full border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:border-azul">
+                <input type="text" id="cidadeDestino" required placeholder="Cidade de Destino (Ex: Recife)" class="w-full border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:border-azul">
+                <input type="text" id="enderecoDestino" required placeholder="Endereço de Destino (Rua, Bairro)" class="w-full border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:border-azul">
+            </div>
+
+            <div class="flex gap-2">
+                <div class="relative flex-[2]">
+                    <label class="absolute -top-2 left-2 bg-white px-1 text-[11px] text-gray-500 font-bold">Data e Hora</label>
+                    <input type="datetime-local" id="horario" required class="w-full border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:border-azul text-sm">
+                </div>
+                <div class="relative flex-1">
+                    <label class="absolute -top-2 left-2 bg-white px-1 text-[11px] text-gray-500 font-bold">Vagas</label>
+                    <input type="number" id="vagas" value="4" required class="w-full border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:border-azul">
+                </div>
+            </div>
+
+            <div class="relative">
+                <label class="absolute -top-2 left-2 bg-white px-1 text-[11px] text-gray-500 font-bold">Valor Total (R$)</label>
+                <input type="number" step="0.01" id="valorCorrida" required placeholder="Ex: 50.00" class="w-full border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:border-azul">
+            </div>
+
+            <Spacer class="flex-1"></Spacer>
+
+            <button type="submit" id="btnSalvar" class="w-full bg-verde text-white font-bold py-4 rounded-lg shadow-md hover:bg-green-700 transition mt-auto">
+                Publicar Corrida
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const BASE_URL = "https://transporte-interiorano-backend.onrender.com";
+
+        document.getElementById('formCriar').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSalvar');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
+
+            // Puxando da memória quem é o motorista
+            const cpfLogado = localStorage.getItem('cpfLogado');
+            const nomeLogado = localStorage.getItem('nomeLogado');
+            
+            // Formatando a data do input datetime-local (AAAA-MM-DDTHH:MM) para o padrão do Kotlin (DD/MM/AAAA às HH:MM)
+            const inputData = document.getElementById('horario').value;
+            const dataObj = new Date(inputData);
+            const dia = String(dataObj.getDate()).padStart(2, '0');
+            const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+            const ano = dataObj.getFullYear();
+            const horas = String(dataObj.getHours()).padStart(2, '0');
+            const mins = String(dataObj.getMinutes()).padStart(2, '0');
+            const dataFormatada = `${dia}/${mes}/${ano} às ${horas}:${mins}`;
+
+            const payload = {
+                evento_nome: document.getElementById('nomeEvento').value,
+                cidade_origem: document.getElementById('cidadeOrigem').value,
+                endereco_origem: document.getElementById('enderecoOrigem').value,
+                cidade_destino: document.getElementById('cidadeDestino').value,
+                endereco_destino: document.getElementById('enderecoDestino').value,
+                horario: dataFormatada,
+                vagas: document.getElementById('vagas').value,
+                valor_corrida: document.getElementById('valorCorrida').value,
+                motorista: nomeLogado,
+                motorista_cpf: cpfLogado
+            };
+
+            try {
+                const resposta = await fetch(`${BASE_URL}/caronas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if(resposta.ok || resposta.status === 201) {
+                    alert("Evento publicado com sucesso!");
+                    window.location.href = 'painel.html';
+                } else {
+                    alert("Erro ao publicar evento.");
+                    btn.disabled = false;
+                    btn.innerHTML = 'Publicar Corrida';
+                }
+            } catch(erro) {
+                alert("Falha de conexão.");
+                btn.disabled = false;
+                btn.innerHTML = 'Publicar Corrida';
+            }
+        });
+    </script>
+</body>
+</html>

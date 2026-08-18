@@ -111,22 +111,16 @@
 
         function abrirViagemProgramada() {
             if (checarSeMotorista()) {
-                // Rota do Motorista
-                alert("Em breve: Tela para o Motorista criar e gerenciar suas Viagens Programadas!");
-                // No futuro usaremos: window.location.href = 'meus_eventos.html';
+                window.location.href = 'criar_evento.html'; // 🟢 Vai para a nova tela
             } else {
-                // Rota do Passageiro
                 window.location.href = 'eventos_disponiveis.html';
             }
         }
 
         function abrirCorridaEmergencial() {
             if (checarSeMotorista()) {
-                // Rota do Motorista
-                alert("Em breve: Tela de Radar para o Motorista receber e aceitar chamados!");
-                // No futuro usaremos: window.location.href = 'radar_motorista.html';
+                window.location.href = 'radar_motorista.html'; // 🟢 Vai para o Radar novo
             } else {
-                // Rota do Passageiro
                 window.location.href = 'emergencial.html';
             }
         }
