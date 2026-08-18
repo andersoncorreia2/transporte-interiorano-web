@@ -47,6 +47,13 @@
         }
 
         window.onload = async function() {
+            // 🟢 AVISA O BANCO QUE ENTROU NA MODALIDADE PROGRAMADA
+            fetch(`${BASE_URL}/usuarios/alterar_modalidade`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('tokenSessao')}` },
+                body: JSON.stringify({ modalidade: "Programada" })
+            }).catch(e => console.error(e));
+
             const listaEventos = document.getElementById('listaEventos');
             const loading = document.getElementById('loading');
             const cpfLimpo = cpfLogado.replace(/\D/g, '');

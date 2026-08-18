@@ -112,6 +112,13 @@
 
         // 🟢 1. AUDITORIA ANTI-CALOTE (Roda imediatamente ao abrir a tela)
         window.onload = async function() {
+            // 🟢 AVISA O BANCO QUE ENTROU NA MODALIDADE EMERGENCIAL
+            fetch(`${BASE_URL}/usuarios/alterar_modalidade`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('tokenSessao')}` },
+                body: JSON.stringify({ modalidade: "Emergencial" })
+            }).catch(e => console.error(e));
+
             try {
                 const res = await fetch(`${BASE_URL}/pagamentos/emergente/verificar_debito`, {
                     headers: { 'Authorization': `Bearer ${token}` }
