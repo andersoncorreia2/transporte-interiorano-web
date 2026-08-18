@@ -15,7 +15,7 @@
     <div class="bg-fundo w-full max-w-sm min-h-[700px] shadow-2xl relative flex flex-col overflow-y-auto">
         
         <!-- Header -->
-        <div class="bg-azul text-white p-4 flex items-center sticky top-0 z-10 shadow-md">
+        <div class="bg-azul text-white p-4 flex items-center sticky top-0 z-20 shadow-md">
             <button onclick="window.location.href='perfil.html'" class="hover:bg-blue-800 p-2 rounded-full transition mr-3">
                 <i class="fa-solid fa-arrow-left text-xl"></i>
             </button>
@@ -30,17 +30,17 @@
                 <div class="space-y-3">
                     <div class="relative">
                         <label class="absolute -top-2 left-2 bg-fundo px-1 text-[11px] text-gray-500 font-bold">Nome completo</label>
-                        <input type="text" id="nome" required class="w-full bg-transparent border border-gray-300 rounded-lg p-3 pt-3 text-gray-900 font-bold outline-none focus:border-azul">
+                        <input type="text" id="nome" required class="w-full bg-transparent border border-gray-300 rounded-lg p-3 text-gray-900 font-bold outline-none focus:border-azul">
                     </div>
                     
                     <div class="relative">
                         <label class="absolute -top-2 left-2 bg-gray-200 px-1 text-[11px] text-gray-500 font-bold">CPF (Não editável)</label>
-                        <input type="text" id="cpf" disabled class="w-full bg-gray-200 border border-gray-300 rounded-lg p-3 pt-3 text-gray-700 font-bold outline-none cursor-not-allowed">
+                        <input type="text" id="cpf" disabled class="w-full bg-gray-200 border border-gray-300 rounded-lg p-3 text-gray-700 font-bold outline-none cursor-not-allowed">
                     </div>
 
                     <div class="relative">
                         <label class="absolute -top-2 left-2 bg-fundo px-1 text-[11px] text-azul font-bold">Telefone / WhatsApp</label>
-                        <input type="text" id="telefone" required class="w-full bg-transparent border-2 border-azul rounded-lg p-3 pt-3 text-gray-900 font-bold outline-none">
+                        <input type="text" id="telefone" required class="w-full bg-transparent border-2 border-azul rounded-lg p-3 text-gray-900 font-bold outline-none">
                     </div>
                 </div>
             </div>
@@ -110,19 +110,41 @@
                     </div>
                 </div>
 
-                <!-- Oculto no visual base, usado se for ofertar corrida -->
-                <div id="areaMotorista" class="space-y-3 mb-4 p-4 border border-gray-300 rounded-lg bg-white hidden">
-                    <h4 class="text-xs font-bold text-azul mb-2">Dados do Veículo</h4>
-                    <input type="text" id="veiculo" placeholder="Modelo do Veículo (Ex: Fiat Uno)" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-gray-900 text-sm outline-none">
-                    <input type="text" id="placa" placeholder="Placa (Ex: ABC-1234)" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-gray-900 text-sm outline-none">
-                </div>
+                <!-- CARD DE VEÍCULO (IGUAL AO ANDROID) -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
+                        <span id="textoToggleOfertar" class="text-[15px] font-bold text-azul">Ofertar Corridas (Desativado)</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggleOfertar" class="sr-only peer" onchange="alternarMotorista()">
+                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-azul"></div>
+                        </label>
+                    </div>
 
-                <div class="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <span class="text-sm font-bold text-gray-600">Quero ofertar Corridas</span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="toggleOfertar" class="sr-only peer" onchange="alternarMotorista()">
-                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-verde"></div>
-                    </label>
+                    <div id="areaMotorista" class="p-4 space-y-4 hidden">
+                        <div class="relative">
+                            <label class="absolute -top-2 left-2 bg-white px-1 text-[11px] text-gray-500 font-bold">Tipo de Veículo</label>
+                            <select id="tipoVeiculo" class="w-full bg-transparent border border-gray-300 rounded-lg p-3 text-gray-900 font-bold outline-none focus:border-azul appearance-none">
+                                <option value="Carro">Carro</option>
+                                <option value="Moto">Moto</option>
+                            </select>
+                        </div>
+                        
+                        <div class="relative">
+                            <label class="absolute -top-2 left-2 bg-white px-1 text-[11px] text-gray-500 font-bold">Modelo de Veículo</label>
+                            <input type="text" id="modeloVeiculo" placeholder="Ex: Fiat Uno Mille Fire" class="w-full bg-transparent border border-gray-300 rounded-lg p-3 text-gray-900 font-bold outline-none focus:border-azul">
+                        </div>
+
+                        <div class="flex gap-3">
+                            <div class="relative flex-[2]">
+                                <label class="absolute -top-2 left-2 bg-white px-1 text-[11px] text-gray-500 font-bold">Placa</label>
+                                <input type="text" id="placa" placeholder="Ex: ABC-1234" class="w-full bg-transparent border border-gray-300 rounded-lg p-3 text-gray-900 font-bold outline-none focus:border-azul uppercase">
+                            </div>
+                            <div class="relative flex-1">
+                                <label class="absolute -top-2 left-2 bg-white px-1 text-[11px] text-gray-500 font-bold">Nº Vagas</label>
+                                <input type="number" id="vagas" value="4" class="w-full bg-transparent border border-gray-300 rounded-lg p-3 text-gray-900 font-bold outline-none focus:border-azul">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -141,28 +163,49 @@
 
         if (!token) window.location.href = 'login.html';
 
-        // MÁSCARAS
-        document.getElementById('telefone').addEventListener('input', function (e) {
-            let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
-            e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
-        });
+        // 🟢 FUNÇÕES DE MÁSCARA (Separadas para rodarem no load e na digitação)
+        function aplicarMascaraTelefone(v) {
+            if(!v) return "";
+            let x = v.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+            return !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+        }
 
-        document.getElementById('cep').addEventListener('input', function (e) {
-            let x = e.target.value.replace(/\D/g, '').match(/(\d{0,5})(\d{0,3})/);
-            e.target.value = !x[2] ? x[1] : x[1] + '-' + x[2];
-        });
+        function aplicarMascaraCep(v) {
+            if(!v) return "";
+            let x = v.replace(/\D/g, '').match(/(\d{0,5})(\d{0,3})/);
+            return !x[2] ? x[1] : x[1] + '-' + x[2];
+        }
 
+        function aplicarMascaraPlaca(v) {
+            if(!v) return "";
+            let x = v.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if(x.length > 3 && !x.includes('-')) {
+                return x.substring(0,3) + '-' + x.substring(3,7);
+            }
+            return x;
+        }
+
+        // EVENTOS DE DIGITAÇÃO PARA AS MÁSCARAS
+        document.getElementById('telefone').addEventListener('input', e => e.target.value = aplicarMascaraTelefone(e.target.value));
+        document.getElementById('cep').addEventListener('input', e => e.target.value = aplicarMascaraCep(e.target.value));
+        document.getElementById('placa').addEventListener('input', e => e.target.value = aplicarMascaraPlaca(e.target.value));
+
+        // ALTERNAR UI DO MOTORISTA
         function alternarMotorista() {
             const toggle = document.getElementById('toggleOfertar');
             const area = document.getElementById('areaMotorista');
+            const texto = document.getElementById('textoToggleOfertar');
+            
             if (toggle.checked) {
                 area.classList.remove('hidden');
+                texto.textContent = "Ofertar Corridas (Ativado)";
             } else {
                 area.classList.add('hidden');
+                texto.textContent = "Ofertar Corridas (Desativado)";
             }
         }
 
-        // CARREGAR DADOS NA TELA
+        // CARREGAR DADOS NA TELA COM AS MÁSCARAS JÁ APLICADAS
         window.onload = function() {
             const dadosUsuarioStr = localStorage.getItem('dadosUsuario');
             if (dadosUsuarioStr) {
@@ -172,28 +215,41 @@
                 
                 // Formata CPF para visualização
                 let c = (dadosOriginais.cpf || '').replace(/\D/g, '');
-                if (c.length === 11) {
-                    c = c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-                }
+                if (c.length === 11) c = c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
                 document.getElementById('cpf').value = c;
                 
-                document.getElementById('telefone').value = dadosOriginais.telefone || '';
+                // 🟢 APLICA MÁSCARAS NO CARREGAMENTO
+                document.getElementById('telefone').value = aplicarMascaraTelefone(dadosOriginais.telefone);
+                document.getElementById('cep').value = aplicarMascaraCep(dadosOriginais.cep);
+                
                 document.getElementById('rua').value = dadosOriginais.rua || '';
                 document.getElementById('numero').value = dadosOriginais.numero || '';
                 document.getElementById('complemento').value = dadosOriginais.complemento || '';
                 document.getElementById('bairro').value = dadosOriginais.bairro || '';
                 document.getElementById('cidade').value = dadosOriginais.cidade || '';
                 document.getElementById('estado').value = dadosOriginais.estado || 'PE';
-                document.getElementById('cep').value = dadosOriginais.cep || '';
                 document.getElementById('email').value = dadosOriginais.email || '';
                 document.getElementById('username').value = dadosOriginais.usuario || '';
 
+                // LÓGICA DO VEÍCULO (Separando Carro/Moto do Modelo)
                 const temVeiculo = dadosOriginais.veiculo && dadosOriginais.veiculo.trim() !== "";
                 document.getElementById('toggleOfertar').checked = temVeiculo;
+                alternarMotorista(); // Chama para atualizar a UI
+
                 if(temVeiculo) {
-                    document.getElementById('veiculo').value = dadosOriginais.veiculo;
-                    document.getElementById('placa').value = dadosOriginais.placa || '';
-                    document.getElementById('areaMotorista').classList.remove('hidden');
+                    let veiculoCompleto = dadosOriginais.veiculo;
+                    if(veiculoCompleto.includes(" - ")) {
+                        let partes = veiculoCompleto.split(" - ");
+                        document.getElementById('tipoVeiculo').value = partes[0].trim();
+                        // Junta o resto caso o modelo também tenha traço no nome
+                        document.getElementById('modeloVeiculo').value = partes.slice(1).join(" - ").trim(); 
+                    } else {
+                        document.getElementById('tipoVeiculo').value = "Carro";
+                        document.getElementById('modeloVeiculo').value = veiculoCompleto;
+                    }
+                    
+                    document.getElementById('placa').value = aplicarMascaraPlaca(dadosOriginais.placa);
+                    document.getElementById('vagas').value = dadosOriginais.vagas || "4";
                 }
             }
         };
@@ -207,9 +263,14 @@
 
             const querOfertar = document.getElementById('toggleOfertar').checked;
             
+            // Junta novamente para enviar ao banco do jeito que o app espera: "Carro - Fiat Uno"
+            const tipoSelecionado = document.getElementById('tipoVeiculo').value;
+            const modeloDigitado = document.getElementById('modeloVeiculo').value;
+            const veiculoMontado = querOfertar ? `${tipoSelecionado} - ${modeloDigitado}` : "";
+            
             const payloadAtualizado = {
                 nome: document.getElementById('nome').value,
-                telefone: document.getElementById('telefone').value,
+                telefone: document.getElementById('telefone').value, // Envia com máscara mesmo, o BD lida com isso
                 email: document.getElementById('email').value,
                 rua: document.getElementById('rua').value,
                 numero: document.getElementById('numero').value,
@@ -218,13 +279,12 @@
                 cidade: document.getElementById('cidade').value,
                 estado: document.getElementById('estado').value,
                 cep: document.getElementById('cep').value,
-                veiculo: querOfertar ? document.getElementById('veiculo').value : "",
+                veiculo: veiculoMontado,
                 placa: querOfertar ? document.getElementById('placa').value : "",
-                vagas: querOfertar ? "4" : "0"
+                vagas: querOfertar ? document.getElementById('vagas').value : "0"
             };
 
             try {
-                // Endpoint seguro do PUT que o seu carona_controller / usuario_controller exige (cpf codificado)
                 const cpfReal = dadosOriginais.cpf.replace(/\D/g, '');
                 const resposta = await fetch(`${BASE_URL}/usuarios/${encodeURIComponent(cpfReal)}`, {
                     method: 'PUT',
@@ -238,7 +298,6 @@
                 const json = await resposta.json();
 
                 if(resposta.ok || resposta.status === 200) {
-                    // Atualiza a memória local para o perfil ler o dado novo na hora
                     const novoDadoMemoria = { ...dadosOriginais, ...payloadAtualizado };
                     localStorage.setItem('dadosUsuario', JSON.stringify(novoDadoMemoria));
                     
