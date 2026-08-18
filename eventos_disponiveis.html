@@ -49,13 +49,14 @@
         window.onload = async function() {
             const listaEventos = document.getElementById('listaEventos');
             const loading = document.getElementById('loading');
+            const cpfLimpo = cpfLogado.replace(/\D/g, '');
 
             try {
-                // 1. Busca as viagens ativas
-                const resposta = await fetch(`${BASE_URL}/caronas/${encodeURIComponent(cpfLogado)}`, { cache: 'no-store' });
+                // 1. Busca as viagens
+                const resposta = await fetch(`${BASE_URL}/caronas/${cpfLimpo}`, { cache: 'no-store' });
                 const caronas = await resposta.json();
 
-                // 2. Busca todas as solicitações para fazer a matemática das vagas
+                // 2. Busca solicitações
                 const respostaSol = await fetch(`${BASE_URL}/solicitacoes`, { cache: 'no-store' });
                 const todasSolicitacoes = await respostaSol.json();
 
@@ -66,7 +67,6 @@
                         <div class="text-center py-12 text-gray-500">
                             <i class="fa-regular fa-calendar-xmark text-5xl mb-4 opacity-50"></i>
                             <p class="font-bold">Nenhum evento disponível no momento.</p>
-                            <p class="text-sm mt-2">Tente novamente mais tarde.</p>
                         </div>
                     `;
                     return;
@@ -74,7 +74,6 @@
 
                 // DESENHA OS CARDS
                 caronas.forEach(carona => {
-                    // 🟢 MATEMÁTICA DE VAGAS IDÊNTICA AO KOTLIN
                     const pedidosDestaCarona = todasSolicitacoes.filter(s => s.carona_id === carona.id);
                     
                     const qtdOcupadas = pedidosDestaCarona.filter(s => {
@@ -86,9 +85,50 @@
                     const vagasRestantes = totalVagas - qtdOcupadas;
                     const esgotado = vagasRestantes <= 0;
 
-                    // Ajuste de cores baseado na lotação
                     const corVaga = esgotado ? "text-red-600" : "text-verde";
                     const textoVaga = esgotado ? "Lotação Esgotada" : `${vagasRestantes} Vagas Livres`;
+
+                    // 🟢 MAGICA AQUI: Verifica se EU já solicitei esta carona
+                    const minhaSolicitacao = pedidosDestaCarona.find(s => 
+                        s.passageiro_cpf === cpfLimpo && 
+                        !s.status.toLowerCase().includes("expirado") && 
+                        !s.status.toLowerCase().includes("cancelada")
+                    );
+
+                    let botoesAcaoHTML = '';
+
+                    // 🟢 CONTROLE DOS BOTÕES BASEADO NO MEU STATUS
+                    if (minhaSolicitacao) {
+                        const statusMeu = minhaSolicitacao.status.toLowerCase();
+                        
+                        if (statusMeu.includes("pendente")) {
+                            botoesAcaoHTML = `
+                                <div class="flex gap-2 mt-2">
+                                    <button disabled class="flex-[2] bg-yellow-500 text-white font-bold py-3.5 rounded-xl shadow-md cursor-not-allowed text-sm">
+                                        <i class="fa-solid fa-clock"></i> Pendente / Aguardando
+                                    </button>
+                                    <button onclick="cancelarMinhaSolicitacao(${minhaSolicitacao.id})" class="flex-1 bg-red-50 text-vermelho border border-red-200 hover:bg-red-100 font-bold py-3.5 rounded-xl shadow-sm transition text-sm">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            `;
+                        } else if (statusMeu.includes("aceito") || statusMeu.includes("taxa paga")) {
+                            botoesAcaoHTML = `
+                                <button disabled class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl mt-2 shadow-md cursor-not-allowed">
+                                    <i class="fa-solid fa-circle-check"></i> Vaga Garantida!
+                                </button>
+                            `;
+                        }
+                    } else {
+                        // Se não tem solicitação minha, mostra o botão normal
+                        botoesAcaoHTML = `
+                            <button onclick="solicitarVaga(${carona.id})" 
+                                ${esgotado ? 'disabled' : ''}
+                                class="w-full ${esgotado ? 'bg-gray-400 cursor-not-allowed' : 'bg-verde hover:bg-green-700'} text-white font-bold py-3.5 rounded-xl transition shadow-md flex justify-center items-center gap-2 mt-2">
+                                ${esgotado ? 'Vagas Esgotadas' : 'Solicitar Vaga <i class="fa-solid fa-car-side"></i>'}
+                            </button>
+                        `;
+                    }
 
                     const cardHTML = `
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative mb-4">
@@ -98,21 +138,13 @@
                                 </div>
                                 <div>
                                     <h3 class="font-bold text-gray-900 text-lg leading-tight">${carona.motorista || 'Motorista Parceiro'}</h3>
-                                    <div class="flex items-center text-yellow-500 text-xs font-bold mt-1 gap-1">
-                                        <i class="fa-solid fa-star"></i>
-                                        <span class="text-gray-700">Novo Parceiro</span>
-                                    </div>
                                 </div>
                             </div>
-
                             <div class="p-4 space-y-3">
                                 <div class="flex items-start gap-3">
                                     <i class="fa-solid fa-bullseye text-red-500 mt-1"></i>
-                                    <div>
-                                        <p class="font-bold text-azul text-sm">Evento: ${carona.evento_nome}</p>
-                                    </div>
+                                    <div><p class="font-bold text-azul text-sm">Evento: ${carona.evento_nome}</p></div>
                                 </div>
-                                
                                 <div class="flex items-start gap-3">
                                     <i class="fa-solid fa-location-dot text-red-500 mt-1 ml-0.5"></i>
                                     <div>
@@ -120,7 +152,6 @@
                                         <p class="text-sm text-gray-600">${carona.endereco_origem || ''}</p>
                                     </div>
                                 </div>
-
                                 <div class="flex items-start gap-3">
                                     <i class="fa-solid fa-flag-checkered text-gray-600 mt-1"></i>
                                     <div>
@@ -128,27 +159,18 @@
                                         <p class="text-sm text-gray-600">${carona.endereco_destino || ''}</p>
                                     </div>
                                 </div>
-
                                 <div class="flex items-center gap-3 text-red-500 font-bold text-sm pt-1">
-                                    <i class="fa-regular fa-clock"></i>
-                                    Partida: ${carona.horario}
+                                    <i class="fa-regular fa-clock"></i> Partida: ${carona.horario}
                                 </div>
-
                                 <div class="flex items-center gap-3 ${corVaga} font-bold text-sm">
-                                    <i class="fa-solid fa-user-group text-blue-500"></i>
-                                    ${textoVaga}
+                                    <i class="fa-solid fa-user-group text-blue-500"></i> ${textoVaga}
                                 </div>
-
                                 <div class="flex items-center gap-3 text-azul font-bold text-sm pb-2">
-                                    <i class="fa-solid fa-sack-dollar text-yellow-500"></i>
-                                    Valor Total: R$ ${parseFloat(carona.valor_corrida || 0).toFixed(2)}
+                                    <i class="fa-solid fa-sack-dollar text-yellow-500"></i> Valor Total: R$ ${parseFloat(carona.valor_corrida || 0).toFixed(2)}
                                 </div>
 
-                                <button onclick="solicitarVaga(${carona.id})" 
-                                    ${esgotado ? 'disabled' : ''}
-                                    class="w-full ${esgotado ? 'bg-gray-400 cursor-not-allowed' : 'bg-verde hover:bg-green-700'} text-white font-bold py-3.5 rounded-xl transition shadow-md flex justify-center items-center gap-2 mt-2">
-                                    ${esgotado ? 'Vagas Esgotadas' : 'Solicitar Vaga <i class="fa-solid fa-car-side"></i>'}
-                                </button>
+                                <!-- Renderiza os botões dinâmicos -->
+                                ${botoesAcaoHTML}
                             </div>
                         </div>
                     `;
@@ -156,12 +178,34 @@
                 });
 
             } catch (erro) {
-                loading.innerHTML = `<p class="text-red-500 font-bold">Erro ao conectar com o banco de dados.</p>`;
+                loading.innerHTML = `<p class="text-red-500 font-bold">Erro ao carregar os eventos.</p>`;
             }
         };
 
+        // 🟢 NOVA FUNÇÃO: CANCELAR A SOLICITAÇÃO (DELETE no Banco)
+        async function cancelarMinhaSolicitacao(idSolicitacao) {
+            if (!confirm("Tem certeza que deseja cancelar o seu pedido de vaga nesta viagem?")) return;
+
+            const token = localStorage.getItem('tokenSessao');
+            try {
+                const res = await fetch(`${BASE_URL}/solicitacoes/${idSolicitacao}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    alert("Sua solicitação foi cancelada com sucesso.");
+                    window.location.reload(); // Recarrega para o botão voltar a ser "Solicitar Vaga"
+                } else {
+                    alert("Erro ao tentar cancelar. A solicitação pode já ter expirado.");
+                }
+            } catch (e) {
+                alert("Falha de conexão com o servidor.");
+            }
+        }
+
         // =========================================================================
-        // 🟢 NOVO FLUXO FINANCEIRO: SOLICITAÇÃO COM PIX INTEGRADO
+        // FUNÇÕES DO PIX (MANTIDAS DO PASSO ANTERIOR)
         // =========================================================================
         async function solicitarVaga(idCarona) {
             const token = localStorage.getItem('tokenSessao');
@@ -171,46 +215,30 @@
                 return;
             }
 
-            // 1. Verifica se o passageiro está bloqueado por calote anterior
             try {
-                const resPermissao = await fetch(`${BASE_URL}/pagamentos/programado/verificar_permissao`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const resPermissao = await fetch(`${BASE_URL}/pagamentos/programado/verificar_permissao`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const jsonPermissao = await resPermissao.json();
                 if (jsonPermissao.bloqueado) {
                     alert("🚨 " + jsonPermissao.mensagem);
                     return;
                 }
-            } catch (e) {
-                alert("Erro ao verificar status da conta.");
-                return;
-            }
+            } catch (e) { alert("Erro ao verificar status da conta."); return; }
 
-            // 2. Verifica as regras de prazo (Permite taxa de R$ 5,00 ou exige integral?)
             let permiteTaxa = false;
             let valorTotal = 0.0;
             try {
                 const resPrazo = await fetch(`${BASE_URL}/caronas/verificar_prazo_reserva/${idCarona}`);
                 const jsonPrazo = await resPrazo.json();
-                
-                if (jsonPrazo.erro) {
-                    alert(jsonPrazo.erro);
-                    return;
-                }
+                if (jsonPrazo.erro) { alert(jsonPrazo.erro); return; }
                 permiteTaxa = jsonPrazo.permite_taxa_reserva;
                 valorTotal = jsonPrazo.valor_total;
-            } catch (e) {
-                alert("Erro ao verificar as regras de prazo da carona.");
-                return;
-            }
+            } catch (e) { alert("Erro de comunicação."); return; }
 
-            // 3. Define a rota e o payload baseado na escolha do usuário
             let endpoint = "";
             let payload = { carona_id: idCarona };
 
             if (permiteTaxa) {
                 const pagarTaxa = confirm(`Esta viagem está a mais de 72h de distância!\n\nVocê deseja pagar apenas a TAXA DE RESERVA (R$ 5,00) agora e o restante depois?\n\n- Clique em [OK] para pagar só a taxa.\n- Clique em [Cancelar] para pagar o Valor Total (R$ ${valorTotal.toFixed(2)}).`);
-                
                 if (pagarTaxa) {
                     endpoint = "/pagamentos/programado/gerar_taxa";
                 } else {
@@ -220,45 +248,32 @@
             } else {
                 const confirmar = confirm(`Esta viagem ocorrerá em breve (menos de 72h).\nÉ exigido o pagamento INTEGRAL (R$ ${valorTotal.toFixed(2)}) para garantir a vaga.\n\nDeseja gerar o Pix agora?`);
                 if (!confirmar) return;
-                
                 endpoint = "/pagamentos/programado/gerar_checkout";
                 payload.valor_total = valorTotal;
             }
 
-            // 4. Gera o PIX (O backend Python cria a solicitação automaticamente aqui!)
             try {
-                // Alerta de carregamento
                 const modalLoading = document.createElement('div');
-                modalLoading.innerHTML = `<div class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center"><p class="text-white font-bold text-xl"><i class="fa-solid fa-spinner fa-spin"></i> Gerando Pix Mercado Pago...</p></div>`;
+                modalLoading.innerHTML = `<div class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center"><p class="text-white font-bold text-xl"><i class="fa-solid fa-spinner fa-spin"></i> Gerando Pix...</p></div>`;
                 document.body.appendChild(modalLoading);
 
                 const resPix = await fetch(`${BASE_URL}${endpoint}`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` 
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(payload)
                 });
 
                 const jsonPix = await resPix.json();
-                modalLoading.remove(); // Remove o aviso de loading
+                modalLoading.remove();
 
                 if (resPix.ok || resPix.status === 201) {
-                    // Chama a função que desenha a tela bonita do Pix (abaixo)
                     mostrarModalPixWeb(jsonPix.pix_copia_cola);
                 } else {
-                    alert("Erro ao gerar Pix: " + (jsonPix.erro || "Verifique se você já solicitou esta viagem."));
+                    alert("Erro ao gerar Pix: " + (jsonPix.erro || "Falha."));
                 }
-            } catch (erro) {
-                console.error(erro);
-                alert("Falha de conexão com o servidor de pagamentos.");
-            }
+            } catch (erro) { alert("Falha na conexão."); }
         }
 
-        // =========================================================================
-        // 🟢 DESENHA O MODAL DE PAGAMENTO PIX NA TELA (ESTILO APLICATIVO)
-        // =========================================================================
         function mostrarModalPixWeb(codigoPix) {
             const modalAntigo = document.getElementById('modalPixWeb');
             if(modalAntigo) modalAntigo.remove();
@@ -267,7 +282,7 @@
                 <div id="modalPixWeb" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
                     <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center relative border border-gray-100">
                         <h3 class="text-2xl font-black text-azul mb-2">⚡ Pague para Reservar</h3>
-                        <p class="text-sm text-gray-600 mb-5 leading-snug">Sua vaga está pendente. Copie o código abaixo e cole no seu banco (Área Pix Copia e Cola) para garantir seu lugar!</p>
+                        <p class="text-sm text-gray-600 mb-5 leading-snug">Sua vaga está pendente. Copie o código abaixo e cole no seu banco para garantir seu lugar!</p>
                         
                         <textarea id="textoPixArea" readonly class="w-full bg-gray-50 border-2 border-gray-200 rounded-xl p-3 text-xs text-gray-600 mb-4 h-24 resize-none outline-none focus:border-azul transition">${codigoPix}</textarea>
                         
@@ -286,7 +301,7 @@
         function copiarPixWeb() {
             const area = document.getElementById('textoPixArea');
             area.select();
-            document.execCommand('copy'); // Mantém o suporte a navegadores antigos
+            document.execCommand('copy'); 
             navigator.clipboard.writeText(area.value).catch(()=>{});
             alert('✅ Código Pix copiado! Abra o app do seu banco.');
         }
