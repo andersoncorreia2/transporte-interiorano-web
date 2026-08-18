@@ -22,9 +22,10 @@
             <h1 class="text-[20px] font-bold tracking-wide">Chamar Corrida</h1>
         </div>
 
-        <div class="p-4 flex-1 flex flex-col">
+        <div class="p-4 flex-1 flex flex-col relative">
             
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex-1 flex flex-col">
+            <!-- 🟢 TELA 1: FORMULÁRIO DE CHAMADA (O que você já tinha) -->
+            <div id="telaFormulario" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex-1 flex flex-col">
                 <h2 class="text-xl font-bold text-azul mb-1">Para onde você vai? 📍</h2>
                 <p class="text-xs text-gray-500 mb-6">Solicite um motorista parceiro próximo a você.</p>
 
@@ -60,7 +61,7 @@
                     </button>
                 </div>
 
-                <!-- 🟢 SELETOR DE PAGAMENTO -->
+                <!-- SELETOR DE PAGAMENTO -->
                 <div onclick="document.getElementById('modalPagamento').classList.remove('hidden')" class="bg-gray-50 border border-gray-200 rounded-xl p-4 flex justify-between items-center cursor-pointer mb-6 hover:bg-gray-100 transition">
                     <div class="flex items-center gap-3">
                         <span id="iconePagamento" class="text-xl">💵</span>
@@ -69,18 +70,34 @@
                     <span class="text-azul font-bold text-sm">Alterar ></span>
                 </div>
 
-                <!-- Spacer -->
                 <div class="flex-1"></div>
 
-                <!-- Botão Chamar -->
                 <button onclick="solicitarCorrida()" class="w-full bg-verde hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-md transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-bolt"></i> Chamar <span id="textoBtnVeiculo">Carro</span> Agora
                 </button>
             </div>
+
+            <!-- 🟢 TELA 2: MONITORAMENTO EM TEMPO REAL (Nova tela que substitui o reload) -->
+            <div id="telaMonitoramento" class="hidden bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex-1 flex flex-col justify-center text-center">
+                <div id="iconeMonitoramento" class="text-6xl text-azul mb-4"><i class="fa-solid fa-radar fa-spin"></i></div>
+                <h2 id="tituloMonitoramento" class="text-2xl font-black text-gray-900 mb-2">Procurando Motorista...</h2>
+                <p id="subtituloMonitoramento" class="text-sm text-gray-500 mb-6">Avisando parceiros nas proximidades.</p>
+                
+                <div id="infoMotorista" class="hidden bg-gray-50 border border-gray-200 rounded-xl p-4 text-left mb-6">
+                    <p class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Motorista Parceiro</p>
+                    <p id="nomeMot" class="font-bold text-azul text-lg">---</p>
+                    <p id="veiculoMot" class="text-sm text-gray-700 font-bold mt-1">🚗 --- (<span id="placaMot">---</span>)</p>
+                </div>
+
+                <button id="btnCancelarCorrida" onclick="cancelarCorridaPassageiro()" class="w-full mt-auto bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-bold py-4 rounded-xl shadow-sm transition">
+                    Cancelar Viagem ❌
+                </button>
+            </div>
+
         </div>
     </div>
 
-    <!-- MODAL ESCOLHER PAGAMENTO -->
+    <!-- MODAL ESCOLHER PAGAMENTO (Com as 4 opções que você adicionou) -->
     <div id="modalPagamento" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end justify-center">
         <div class="bg-white rounded-t-3xl w-full max-w-sm p-6 shadow-2xl animate-[slideUp_0.3s_ease-out]">
             <h3 class="text-lg font-bold text-gray-800 mb-4">Selecione o Método</h3>
@@ -109,17 +126,19 @@
 
         let veiculoSelecionado = 'Carro';
         let pagamentoSelecionado = 'Dinheiro';
+        let corridaGlobalId = null;
+        let loopMonitoramento = null;
 
-        // 🟢 1. AUDITORIA ANTI-CALOTE (Roda imediatamente ao abrir a tela)
         window.onload = async function() {
-            // 🟢 AVISA O BANCO QUE ENTROU NA MODALIDADE EMERGENCIAL
+            // Avisa o servidor da modalidade
             fetch(`${BASE_URL}/usuarios/alterar_modalidade`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('tokenSessao')}` },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ modalidade: "Emergencial" })
             }).catch(e => console.error(e));
 
             try {
+                // Auditoria Anti-Calote
                 const res = await fetch(`${BASE_URL}/pagamentos/emergente/verificar_debito`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -127,17 +146,19 @@
                 
                 if (json.bloqueado) {
                     mostrarTelaDeBloqueio(json.detalhes);
+                    return; // Trava tudo
                 }
+
+                // 🟢 SE NÃO É CALOTEIRO: Verifica se ele recarregou a página no meio de uma viagem!
+                recuperarEstado();
             } catch (e) { console.error("Erro na auditoria financeira."); }
         };
 
         function selecionarVeiculo(tipo) {
             veiculoSelecionado = tipo;
             document.getElementById('textoBtnVeiculo').textContent = tipo;
-            
             const btnCarro = document.getElementById('btnCarro');
             const btnMoto = document.getElementById('btnMoto');
-
             if (tipo === 'Carro') {
                 btnCarro.className = "flex-1 bg-blue-50 border-2 border-azul rounded-xl p-4 flex flex-col items-center justify-center transition";
                 btnMoto.className = "flex-1 bg-white border-2 border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center transition";
@@ -154,7 +175,7 @@
             document.getElementById('modalPagamento').classList.add('hidden');
         }
 
-        // 🟢 SOLICITAR CORRIDA
+        // 🟢 SOLICITA A CORRIDA (Com a regra de negócio correta)
         async function solicitarCorrida() {
             const origem = document.getElementById('origem').value;
             const destino = document.getElementById('destino').value;
@@ -168,11 +189,10 @@
                 origem_latitude: 0.0, origem_longitude: 0.0,
                 destino_latitude: 0.0, destino_longitude: 0.0,
                 veiculo_tipo: veiculoSelecionado,
-                forma_pagamento: pagamentoSelecionado // 🟢 Envia a forma escolhida pro servidor
+                forma_pagamento: pagamentoSelecionado 
             };
 
             try {
-                // 1. Cria a corrida no banco de dados
                 const res = await fetch(`${BASE_URL}/corridas/emergentes`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -186,32 +206,25 @@
                     return alert("Erro: " + json.erro);
                 }
 
-                // 🟢 REGRA DE NEGÓCIO DA PLATAFORMA:
                 const ehDinheiro = pagamentoSelecionado === 'Dinheiro';
 
                 if (ehDinheiro) {
-                    // SE FOR DINHEIRO: Libera direto para o radar do motorista
                     removerLoading();
-                    alert("✅ Procurando motoristas nas proximidades!\nO pagamento será feito no final da viagem.");
-                    window.location.href = 'painel.html'; 
-                    return;
+                    // 🟢 A MÁGICA: Em vez de voltar pro painel, ativa a Sala de Espera!
+                    corridaGlobalId = json.corrida_id;
+                    iniciarMonitoramento(); 
                 } else {
-                    // SE FOR PIX OU CARTÃO: Trava a corrida e exige pagamento antecipado
                     const resPix = await fetch(`${BASE_URL}/pagamentos/emergente/gerar_pix_corrida`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ corrida_id: json.corrida_id })
                     });
-
                     const jsonPix = await resPix.json();
                     removerLoading();
 
                     if (resPix.ok) {
-                        // Mostra a tela de pagamento e trava o fluxo até pagar
-                        mostrarModalPix(jsonPix.pix_copia_cola, json.corrida_id, "Pagamento Antecipado", `Para chamar o motorista, confirme o pagamento via ${pagamentoSelecionado}.`, "verificar_pagamento_corrida");
-                    } else {
-                        alert("Erro ao gerar link de pagamento.");
-                    }
+                        mostrarModalPix(jsonPix.pix_copia_cola, json.corrida_id, "Pagamento Antecipado", `Confirme o pagamento via ${pagamentoSelecionado}.`, "verificar_pagamento_corrida");
+                    } else { alert("Erro ao gerar link de pagamento."); }
                 }
 
             } catch (e) {
@@ -220,19 +233,126 @@
             }
         }
 
-        // 🟢 3. TELA DE BLOQUEIO DO CALOTEIRO
+        // 🟢 A SALA DE ESPERA E MONITORAMENTO AO VIVO
+        function iniciarMonitoramento() {
+            document.getElementById('telaFormulario').classList.add('hidden');
+            document.getElementById('telaMonitoramento').classList.remove('hidden');
+            
+            verificarStatusServidor();
+            if(loopMonitoramento) clearInterval(loopMonitoramento);
+            loopMonitoramento = setInterval(verificarStatusServidor, 5000);
+        }
+
+        async function verificarStatusServidor() {
+            if(!corridaGlobalId) return;
+
+            try {
+                const res = await fetch(`${BASE_URL}/corridas/emergentes/status/${corridaGlobalId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if(res.status === 404) {
+                    resetarTela();
+                    alert("Sua viagem expirou no radar.");
+                    return;
+                }
+
+                const dados = await res.json();
+                const statusMotorista = dados.status;
+                const icone = document.getElementById('iconeMonitoramento');
+                const titulo = document.getElementById('tituloMonitoramento');
+                const subtitulo = document.getElementById('subtituloMonitoramento');
+                const infoMot = document.getElementById('infoMotorista');
+
+                if (statusMotorista === "Procurando") {
+                    icone.innerHTML = '<i class="fa-solid fa-radar fa-spin"></i>';
+                    titulo.textContent = "Procurando Parceiros...";
+                    subtitulo.textContent = "Aguardando um motorista aceitar seu chamado.";
+                    infoMot.classList.add('hidden');
+                } 
+                else if (statusMotorista === "Aceita") {
+                    icone.innerHTML = '<i class="fa-solid fa-car-side text-verde bounce"></i>';
+                    titulo.textContent = "Motorista a Caminho!";
+                    titulo.className = "text-2xl font-black text-verde mb-2";
+                    subtitulo.textContent = "Aguarde no local de partida.";
+                    
+                    infoMot.classList.remove('hidden');
+                    document.getElementById('nomeMot').textContent = dados.motorista_nome || "Parceiro";
+                    document.getElementById('veiculoMot').textContent = dados.veiculo || "Veículo";
+                    document.getElementById('placaMot').textContent = dados.placa || "ABC-1234";
+                    document.getElementById('btnCancelarCorrida').textContent = "Cancelar Corrida (Pode haver taxa)";
+                } 
+                else if (statusMotorista === "Em Viagem") {
+                    icone.innerHTML = '<i class="fa-solid fa-route text-blue-600"></i>';
+                    titulo.textContent = "Viagem em Andamento";
+                    titulo.className = "text-2xl font-black text-blue-600 mb-2";
+                    subtitulo.textContent = "Dirigindo até o destino final com segurança.";
+                    document.getElementById('btnCancelarCorrida').classList.add('hidden'); // Oculta botão cancelar
+                } 
+                else if (statusMotorista === "Finalizada") {
+                    clearInterval(loopMonitoramento);
+                    
+                    if (dados.pago === false) {
+                        alert("🚨 Você foi bloqueado por pendência financeira. O sistema será reiniciado.");
+                        window.location.href = 'login.html'; // Expulsa o passageiro!
+                    } else {
+                        alert("🏁 Você chegou ao seu destino!\nObrigado por viajar com a Transporte Interiorano!");
+                        window.location.reload(); 
+                    }
+                }
+                else if (statusMotorista.includes("Cancelada")) {
+                    alert("⚠️ Esta viagem foi cancelada.");
+                    resetarTela();
+                }
+
+            } catch(e) {}
+        }
+
+        async function cancelarCorridaPassageiro() {
+            if(!confirm("Deseja realmente cancelar este chamado?")) return;
+            try {
+                await fetch(`${BASE_URL}/corridas/emergentes/cancelar/${corridaGlobalId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                resetarTela();
+            } catch(e) { alert("Falha ao cancelar."); }
+        }
+
+        async function recuperarEstado() {
+            try {
+                const res = await fetch(`${BASE_URL}/corridas/emergentes/recuperar_estado`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const json = await res.json();
+                if (json.id && json.is_motorista_desta_corrida === false) {
+                    corridaGlobalId = json.id;
+                    iniciarMonitoramento();
+                }
+            } catch(e){}
+        }
+
+        function resetarTela() {
+            clearInterval(loopMonitoramento);
+            corridaGlobalId = null;
+            document.getElementById('telaMonitoramento').classList.add('hidden');
+            document.getElementById('telaFormulario').classList.remove('hidden');
+            document.getElementById('origem').value = "";
+            document.getElementById('destino').value = "";
+            document.getElementById('btnCancelarCorrida').classList.remove('hidden');
+        }
+
+        // 🟢 TELAS DE BLOQUEIO E PIX
         function mostrarTelaDeBloqueio(detalhes) {
             const html = `
                 <div class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6 text-center">
                     <i class="fa-solid fa-triangle-exclamation text-6xl text-red-600 mb-4"></i>
                     <h2 class="text-2xl font-black text-gray-900 mb-2">Conta Suspensa</h2>
-                    <p class="text-gray-600 mb-6 leading-snug">Identificamos que uma corrida anterior (R$ ${detalhes.valor.toFixed(2)}) não foi paga ao motorista.<br><br>Gere o Pix de teste e multa administrativa (R$ 0,01) para desbloquear seu acesso imediatamente.</p>
-                    
+                    <p class="text-gray-600 mb-6 leading-snug">Identificamos que uma corrida anterior (R$ ${detalhes.valor.toFixed(2)}) não foi paga ao motorista.<br><br>Gere o Pix de multa administrativa (R$ 0,01) para desbloquear seu acesso imediatamente.</p>
                     <button onclick="gerarPixMulta(${detalhes.corrida_id})" class="w-full bg-verde hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-bolt"></i> Gerar Pix de Multa (R$ 0,01)
+                        <i class="fa-solid fa-bolt"></i> Gerar Pix de Desbloqueio (R$ 0,01)
                     </button>
-                    
-                    <button onclick="window.location.href='login.html'" class="mt-4 text-gray-500 font-bold">Voltar ao Login</button>
+                    <button onclick="window.location.href='login.html'" class="mt-4 text-gray-500 font-bold">Sair / Trocar Conta</button>
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
@@ -248,78 +368,56 @@
                 });
                 const json = await res.json();
                 removerLoading();
-
-                if (res.ok) {
-                    mostrarModalPix(json.pix_copia_cola, idCorrida, "Desbloquear Conta", "Multa Administrativa", "verificar_debito");
-                } else {
-                    alert("Erro: " + json.erro);
-                }
+                if (res.ok) { mostrarModalPix(json.pix_copia_cola, idCorrida, "Desbloquear Conta", "Multa Administrativa", "verificar_debito"); } 
+                else { alert("Erro: " + json.erro); }
             } catch (e) { removerLoading(); alert("Erro de conexão."); }
         }
 
-        // 🟢 MODAL PIX GENÉRICO (Usado tanto para chamar corrida quanto para pagar multa)
         function mostrarModalPix(codigoPix, idReferencia, titulo, subtitulo, tipoVerificacao) {
             const html = `
                 <div id="modalPixUniversal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
                     <div class="bg-gray-100 rounded-3xl shadow-2xl p-6 w-full max-w-sm text-center relative border border-gray-200">
                         <h3 class="text-xl font-bold text-azul mb-1">${titulo}</h3>
                         <p class="text-sm text-gray-600 mb-4">${subtitulo}</p>
-                        
                         <div class="relative text-left mb-6">
                             <span class="absolute -top-2 left-3 bg-gray-100 px-1 text-[10px] text-gray-500 font-bold">Copia e Cola</span>
                             <textarea id="textoPixAreaUniv" readonly class="w-full bg-white border border-gray-300 rounded-xl p-3 text-xs text-gray-700 h-24 resize-none outline-none">${codigoPix}</textarea>
                         </div>
-                        
-                        <button onclick="copiarPixUniv()" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-full mb-3 shadow-md flex justify-center gap-2">
-                            Copiar Código 📋
-                        </button>
-                        <button onclick="verificarPix('${tipoVerificacao}', ${idReferencia})" class="w-full bg-verde hover:bg-green-700 text-white font-bold py-3.5 rounded-full shadow-md flex justify-center gap-2">
-                            Já Paguei / Verificar ⚡
-                        </button>
+                        <button onclick="copiarPixUniv()" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-full mb-3 shadow-md flex justify-center gap-2">Copiar Código 📋</button>
+                        <button onclick="verificarPix('${tipoVerificacao}', ${idReferencia})" class="w-full bg-verde hover:bg-green-700 text-white font-bold py-3.5 rounded-full shadow-md flex justify-center gap-2">Já Paguei / Verificar ⚡</button>
                     </div>
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
-        function copiarPixUniv() {
-            const a = document.getElementById('textoPixAreaUniv'); a.select(); document.execCommand('copy');
-            alert('Copiado!');
-        }
+        function copiarPixUniv() { const a = document.getElementById('textoPixAreaUniv'); a.select(); document.execCommand('copy'); alert('Copiado!'); }
 
-        // Polling manual do botão "Já paguei"
         async function verificarPix(tipo, id) {
-            mostrarLoading("Verificando pagamento no banco...");
+            mostrarLoading("Verificando pagamento...");
             try {
-                let url = "";
-                if (tipo === "verificar_debito") url = `${BASE_URL}/pagamentos/emergente/verificar_debito`;
-                else url = `${BASE_URL}/pagamentos/emergente/verificar_pagamento_corrida/${id}`;
-
+                let url = tipo === "verificar_debito" ? `${BASE_URL}/pagamentos/emergente/verificar_debito` : `${BASE_URL}/pagamentos/emergente/verificar_pagamento_corrida/${id}`;
                 const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
                 const json = await res.json();
                 removerLoading();
-
-                // Verifica se foi pago ou desbloqueado
                 if (json.pago || json.bloqueado === false) {
                     alert("✅ Pagamento Confirmado!");
-                    window.location.reload(); // Recarrega, e como pagou, a tela vai abrir normalmente!
-                } else {
-                    alert("⏳ Pagamento ainda não identificado. Aguarde uns segundos e tente verificar de novo.");
-                }
+                    if(tipo !== "verificar_debito") {
+                        corridaGlobalId = id;
+                        document.getElementById('modalPixUniversal').remove();
+                        iniciarMonitoramento(); // 🟢 Vai pra sala de espera procurar o motorista!
+                    } else { window.location.reload(); }
+                } else { alert("⏳ Pagamento não identificado ainda."); }
             } catch (e) { removerLoading(); alert("Erro de rede"); }
         }
 
-        // Helpers de UI
-        function mostrarLoading(msg) {
-            const html = `<div id="globalLoading" class="fixed inset-0 bg-white bg-opacity-90 z-[999] flex flex-col items-center justify-center"><i class="fa-solid fa-spinner fa-spin text-4xl text-azul mb-3"></i><p class="font-bold text-gray-700">${msg}</p></div>`;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
+        function mostrarLoading(msg) { document.body.insertAdjacentHTML('beforeend', `<div id="globalLoading" class="fixed inset-0 bg-white bg-opacity-90 z-[999] flex flex-col items-center justify-center"><i class="fa-solid fa-spinner fa-spin text-4xl text-azul mb-3"></i><p class="font-bold text-gray-700">${msg}</p></div>`); }
         function removerLoading() { const el = document.getElementById('globalLoading'); if(el) el.remove(); }
     </script>
-
-    <!-- Keyframes do Tailwind embutidos no style global pra animar o modal -->
-    <style>
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    <style> 
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } } 
+        @keyframes bounce { 0%, 100% { transform: translateY(-5%); } 50% { transform: translateY(0); } } 
+        .bounce { animation: bounce 1s infinite; } 
     </style>
 </body>
 </html>
