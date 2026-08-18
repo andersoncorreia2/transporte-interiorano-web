@@ -84,15 +84,21 @@
     <div id="modalPagamento" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end justify-center">
         <div class="bg-white rounded-t-3xl w-full max-w-sm p-6 shadow-2xl animate-[slideUp_0.3s_ease-out]">
             <h3 class="text-lg font-bold text-gray-800 mb-4">Selecione o Método</h3>
-            <div class="space-y-3">
+            <div class="space-y-2">
                 <button onclick="escolherPagamento('Dinheiro', '💵')" class="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:bg-blue-50 transition">
                     <span class="text-2xl">💵</span><span class="font-bold text-gray-700">Dinheiro</span>
                 </button>
                 <button onclick="escolherPagamento('Pix Integrado', '⚡')" class="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:bg-blue-50 transition">
                     <span class="text-2xl">⚡</span><span class="font-bold text-gray-700">Pix Integrado</span>
                 </button>
+                <button onclick="escolherPagamento('Cartão de Crédito', '💳')" class="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:bg-blue-50 transition">
+                    <span class="text-2xl">💳</span><span class="font-bold text-gray-700">Cartão de Crédito</span>
+                </button>
+                <button onclick="escolherPagamento('Cartão de Débito', '💳')" class="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:bg-blue-50 transition">
+                    <span class="text-2xl">💳</span><span class="font-bold text-gray-700">Cartão de Débito</span>
+                </button>
             </div>
-            <button onclick="document.getElementById('modalPagamento').classList.add('hidden')" class="w-full mt-6 py-3 font-bold text-gray-500">Cancelar</button>
+            <button onclick="document.getElementById('modalPagamento').classList.add('hidden')" class="w-full mt-4 py-3 font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition">Cancelar</button>
         </div>
     </div>
 
@@ -141,7 +147,7 @@
             document.getElementById('modalPagamento').classList.add('hidden');
         }
 
-        // 🟢 2. SOLICITAR CORRIDA
+        // 🟢 SOLICITAR CORRIDA
         async function solicitarCorrida() {
             const origem = document.getElementById('origem').value;
             const destino = document.getElementById('destino').value;
@@ -152,14 +158,14 @@
 
             const payload = {
                 endereco_origem: origem, endereco_destino: destino,
-                origem_latitude: 0.0, origem_longitude: 0.0, // Backend usa isso pra GPS no futuro
+                origem_latitude: 0.0, origem_longitude: 0.0,
                 destino_latitude: 0.0, destino_longitude: 0.0,
                 veiculo_tipo: veiculoSelecionado,
-                forma_pagamento: pagamentoSelecionado
+                forma_pagamento: pagamentoSelecionado // 🟢 Envia a forma escolhida pro servidor
             };
 
             try {
-                // Cria a corrida
+                // 1. Cria a corrida no banco de dados
                 const res = await fetch(`${BASE_URL}/corridas/emergentes`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -173,28 +179,32 @@
                     return alert("Erro: " + json.erro);
                 }
 
-                // 🟢 SE FOR DINHEIRO: Já cai direto no radar
-                if (pagamentoSelecionado === 'Dinheiro') {
+                // 🟢 REGRA DE NEGÓCIO DA PLATAFORMA:
+                const ehDinheiro = pagamentoSelecionado === 'Dinheiro';
+
+                if (ehDinheiro) {
+                    // SE FOR DINHEIRO: Libera direto para o radar do motorista
                     removerLoading();
-                    alert("✅ Procurando motoristas nas proximidades!");
-                    window.location.href = 'painel.html'; // Volta pro painel (ou cria a tela de radar do passageiro depois)
+                    alert("✅ Procurando motoristas nas proximidades!\nO pagamento será feito no final da viagem.");
+                    window.location.href = 'painel.html'; 
                     return;
-                }
-
-                // 🟢 SE FOR PIX: Gera a cobrança antes de soltar pro radar
-                const resPix = await fetch(`${BASE_URL}/pagamentos/emergente/gerar_pix_corrida`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ corrida_id: json.corrida_id })
-                });
-
-                const jsonPix = await resPix.json();
-                removerLoading();
-
-                if (resPix.ok) {
-                    mostrarModalPix(jsonPix.pix_copia_cola, json.corrida_id, "Pague para Chamar", "Pagamento Antecipado", "verificar_pagamento_corrida");
                 } else {
-                    alert("Erro ao gerar Pix antecipado.");
+                    // SE FOR PIX OU CARTÃO: Trava a corrida e exige pagamento antecipado
+                    const resPix = await fetch(`${BASE_URL}/pagamentos/emergente/gerar_pix_corrida`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ corrida_id: json.corrida_id })
+                    });
+
+                    const jsonPix = await resPix.json();
+                    removerLoading();
+
+                    if (resPix.ok) {
+                        // Mostra a tela de pagamento e trava o fluxo até pagar
+                        mostrarModalPix(jsonPix.pix_copia_cola, json.corrida_id, "Pagamento Antecipado", `Para chamar o motorista, confirme o pagamento via ${pagamentoSelecionado}.`, "verificar_pagamento_corrida");
+                    } else {
+                        alert("Erro ao gerar link de pagamento.");
+                    }
                 }
 
             } catch (e) {
