@@ -52,11 +52,10 @@
             const cpfLimpo = cpfLogado.replace(/\D/g, '');
 
             try {
-                // 1. Busca as viagens
+                // 1. Busca viagens e solicitações do banco
                 const resposta = await fetch(`${BASE_URL}/caronas/${cpfLimpo}`, { cache: 'no-store' });
                 const caronas = await resposta.json();
 
-                // 2. Busca solicitações
                 const respostaSol = await fetch(`${BASE_URL}/solicitacoes`, { cache: 'no-store' });
                 const todasSolicitacoes = await respostaSol.json();
 
@@ -88,7 +87,7 @@
                     const corVaga = esgotado ? "text-red-600" : "text-verde";
                     const textoVaga = esgotado ? "Lotação Esgotada" : `${vagasRestantes} Vagas Livres`;
 
-                    // 🟢 MAGICA AQUI: Verifica se EU já solicitei esta carona
+                    // Verifica se EU já solicitei esta carona
                     const minhaSolicitacao = pedidosDestaCarona.find(s => 
                         s.passageiro_cpf === cpfLimpo && 
                         !s.status.toLowerCase().includes("expirado") && 
@@ -97,17 +96,31 @@
 
                     let botoesAcaoHTML = '';
 
-                    // 🟢 CONTROLE DOS BOTÕES BASEADO NO MEU STATUS
+                    // 🟢 CONTROLE VISUAL E CRONÔMETRO (IDÊNTICO AO ANDROID)
                     if (minhaSolicitacao) {
                         const statusMeu = minhaSolicitacao.status.toLowerCase();
                         
                         if (statusMeu.includes("pendente")) {
+                            let timerHTML = '';
+                            if (minhaSolicitacao.data_criacao) {
+                                // O span guarda a data de criação. O setInterval abaixo atualizará o valor dele.
+                                timerHTML = `
+                                    <div class="flex items-center gap-2 mt-4 mb-2">
+                                        <i class="fa-regular fa-clock text-gray-500"></i>
+                                        <span class="text-[13px] font-bold text-azul">Tempo restante para pagar:</span>
+                                        <span class="text-[13px] font-black text-red-600" id="timer-${minhaSolicitacao.id}" data-criacao="${minhaSolicitacao.data_criacao}">--:--</span>
+                                    </div>
+                                `;
+                            }
+
                             botoesAcaoHTML = `
-                                <div class="flex gap-2 mt-2">
-                                    <button disabled class="flex-[2] bg-yellow-500 text-white font-bold py-3.5 rounded-xl shadow-md cursor-not-allowed text-sm">
-                                        <i class="fa-solid fa-clock"></i> Pendente / Aguardando
-                                    </button>
-                                    <button onclick="cancelarMinhaSolicitacao(${minhaSolicitacao.id})" class="flex-1 bg-red-50 text-vermelho border border-red-200 hover:bg-red-100 font-bold py-3.5 rounded-xl shadow-sm transition text-sm">
+                                ${timerHTML}
+                                <div class="flex items-center justify-between mt-2 pt-3 border-t border-gray-100">
+                                    <div>
+                                        <p class="text-[10px] font-bold text-gray-500 uppercase">Status:</p>
+                                        <p class="text-sm font-black text-yellow-500">Pendente ⏳</p>
+                                    </div>
+                                    <button onclick="cancelarMinhaSolicitacao(${minhaSolicitacao.id})" class="px-6 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 font-bold rounded-full shadow-sm transition text-sm">
                                         Cancelar
                                     </button>
                                 </div>
@@ -120,7 +133,7 @@
                             `;
                         }
                     } else {
-                        // Se não tem solicitação minha, mostra o botão normal
+                        // Se não tem solicitação, mostra botão original
                         botoesAcaoHTML = `
                             <button onclick="solicitarVaga(${carona.id})" 
                                 ${esgotado ? 'disabled' : ''}
@@ -169,7 +182,7 @@
                                     <i class="fa-solid fa-sack-dollar text-yellow-500"></i> Valor Total: R$ ${parseFloat(carona.valor_corrida || 0).toFixed(2)}
                                 </div>
 
-                                <!-- Renderiza os botões dinâmicos -->
+                                <!-- Renderiza os botões dinâmicos e cronômetros -->
                                 ${botoesAcaoHTML}
                             </div>
                         </div>
@@ -182,9 +195,35 @@
             }
         };
 
-        // 🟢 NOVA FUNÇÃO: CANCELAR A SOLICITAÇÃO (DELETE no Banco)
+        // 🟢 LOOP DO CRONÔMETRO QUE RODA A CADA 1 SEGUNDO
+        setInterval(() => {
+            document.querySelectorAll('[id^="timer-"]').forEach(el => {
+                const dataCriacaoStr = el.getAttribute('data-criacao');
+                if(!dataCriacaoStr) return;
+                
+                // Converte a string do Python para timestamp, forçando o Fuso -03:00 de Brasília
+                const dataCriacaoISO = dataCriacaoStr.includes('T') ? dataCriacaoStr : dataCriacaoStr.replace(' ', 'T');
+                const criacaoMs = new Date(dataCriacaoISO + "-03:00").getTime();
+                
+                // Soma 15 minutos (900.000 ms)
+                const limiteMs = criacaoMs + 900000;
+                const agoraMs = new Date().getTime(); 
+                
+                const diff = limiteMs - agoraMs;
+                
+                if(diff > 0) {
+                    const min = Math.floor(diff / 60000);
+                    const sec = Math.floor((diff % 60000) / 1000);
+                    el.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+                } else {
+                    el.textContent = "00:00 (Expirando...)";
+                }
+            });
+        }, 1000);
+
+        // CANCELAR A SOLICITAÇÃO
         async function cancelarMinhaSolicitacao(idSolicitacao) {
-            if (!confirm("Tem certeza que deseja cancelar o seu pedido de vaga nesta viagem?")) return;
+            if (!confirm("Tem certeza que deseja cancelar o seu pedido?")) return;
 
             const token = localStorage.getItem('tokenSessao');
             try {
@@ -195,7 +234,7 @@
                 
                 if (res.ok) {
                     alert("Sua solicitação foi cancelada com sucesso.");
-                    window.location.reload(); // Recarrega para o botão voltar a ser "Solicitar Vaga"
+                    window.location.reload(); 
                 } else {
                     alert("Erro ao tentar cancelar. A solicitação pode já ter expirado.");
                 }
@@ -205,7 +244,7 @@
         }
 
         // =========================================================================
-        // FUNÇÕES DO PIX (MANTIDAS DO PASSO ANTERIOR)
+        // FUNÇÕES DO PIX COM O NOVO DESIGN
         // =========================================================================
         async function solicitarVaga(idCarona) {
             const token = localStorage.getItem('tokenSessao');
@@ -274,23 +313,30 @@
             } catch (erro) { alert("Falha na conexão."); }
         }
 
+        // 🟢 NOVO DESIGN DO MODAL PIX (COM BOTÃO VERMELHO)
         function mostrarModalPixWeb(codigoPix) {
             const modalAntigo = document.getElementById('modalPixWeb');
             if(modalAntigo) modalAntigo.remove();
 
             const html = `
                 <div id="modalPixWeb" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center relative border border-gray-100">
-                        <h3 class="text-2xl font-black text-azul mb-2">⚡ Pague para Reservar</h3>
-                        <p class="text-sm text-gray-600 mb-5 leading-snug">Sua vaga está pendente. Copie o código abaixo e cole no seu banco para garantir seu lugar!</p>
+                    <div class="bg-gray-100 rounded-3xl shadow-2xl p-6 w-full max-w-sm text-center relative border border-gray-200">
+                        <h3 class="text-xl font-bold text-azul mb-2">Pague o Pix 📱</h3>
+                        <p class="text-sm text-gray-600 mb-4 leading-snug">Copie o código abaixo e pague no aplicativo do seu banco para garantir sua vaga:</p>
                         
-                        <textarea id="textoPixArea" readonly class="w-full bg-gray-50 border-2 border-gray-200 rounded-xl p-3 text-xs text-gray-600 mb-4 h-24 resize-none outline-none focus:border-azul transition">${codigoPix}</textarea>
+                        <div class="relative text-left mb-6">
+                            <span class="absolute -top-2 left-3 bg-gray-100 px-1 text-[10px] text-gray-500 font-bold">Pix Copia e Cola</span>
+                            <textarea id="textoPixArea" readonly class="w-full bg-white border border-gray-300 rounded-xl p-3 text-xs text-gray-700 h-24 resize-none outline-none focus:border-azul transition">${codigoPix}</textarea>
+                        </div>
                         
-                        <button onclick="copiarPixWeb()" class="w-full bg-azul text-white font-bold py-3.5 rounded-xl mb-3 shadow-md transition hover:bg-blue-700 flex items-center justify-center gap-2">
-                            <i class="fa-regular fa-copy text-lg"></i> Copiar Código Pix
+                        <button onclick="copiarPixWeb()" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-full mb-3 shadow-md transition hover:bg-blue-700 flex items-center justify-center gap-2">
+                            Copiar Código Pix 📋
                         </button>
-                        <button onclick="document.getElementById('modalPixWeb').remove(); window.location.reload();" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2">
-                            Já Paguei / Fechar <i class="fa-solid fa-check"></i>
+                        <button onclick="document.getElementById('modalPixWeb').remove(); window.location.reload();" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-full mb-3 shadow-md transition flex items-center justify-center gap-2">
+                            Já Paguei / Verificar ⚡
+                        </button>
+                        <button onclick="document.getElementById('modalPixWeb').remove(); window.location.reload();" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-full shadow-md transition flex items-center justify-center gap-2">
+                            Fechar / Pagar Depois ❌
                         </button>
                     </div>
                 </div>
