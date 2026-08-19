@@ -80,11 +80,11 @@
                 <h2 id="tituloMonitoramento" class="text-2xl font-black text-gray-900 mb-2">Procurando Motorista...</h2>
                 <p id="subtituloMonitoramento" class="text-sm text-gray-500 mb-6">Avisando parceiros nas proximidades.</p>
                 
-                <!-- CARD DO MOTORISTA + CRONÔMETRO (AGORA COM BORDA VERDE E TEXTO CENTRALIZADO) -->
+                <!-- CARD DO MOTORISTA + CRONÔMETRO -->
                 <div id="infoMotorista" class="hidden bg-white border-2 border-green-500 rounded-xl p-5 text-center mb-6 shadow-md">
                     <p class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Motorista Parceiro</p>
                     <p id="nomeMot" class="font-black text-gray-900 text-xl mb-1">---</p>
-                    <p id="veiculoMot" class="text-sm text-gray-600 font-bold mb-4">🚗 --- (<span id="placaMot">---</span>)</p>
+                    <p id="veiculoMot" class="text-sm text-gray-600 font-bold mb-4">🚗 --- (---)</p>
                     
                     <!-- ⏱️ O CRONÔMETRO -->
                     <div id="areaCronometroCancelamento" class="hidden mt-4 pt-4 border-t border-gray-100">
@@ -276,9 +276,14 @@
                     subtitulo.textContent = "Aguarde no local de partida.";
                     
                     infoMot.classList.remove('hidden');
+                    
+                    // 🟢 AQUI ESTAVA O BUG: Agora construímos a frase completa de uma vez só!
+                    const descVeiculo = dados.veiculo || "Veículo";
+                    const descPlaca = dados.placa || "ABC-1234";
+                    
                     document.getElementById('nomeMot').textContent = dados.motorista_nome || "Parceiro";
-                    document.getElementById('veiculoMot').textContent = dados.veiculo || "Veículo";
-                    document.getElementById('placaMot').textContent = dados.placa || "ABC-1234";
+                    document.getElementById('veiculoMot').textContent = `🚗 ${descVeiculo} (${descPlaca})`;
+                    
                     document.getElementById('btnCancelarCorrida').textContent = "Cancelar Viagem ❌";
                     
                     // ⏱️ GATILHO DO CRONÔMETRO
