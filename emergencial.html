@@ -80,13 +80,13 @@
                 <h2 id="tituloMonitoramento" class="text-2xl font-black text-gray-900 mb-2">Procurando Motorista...</h2>
                 <p id="subtituloMonitoramento" class="text-sm text-gray-500 mb-6">Avisando parceiros nas proximidades.</p>
                 
-                <!-- CARD DO MOTORISTA + CRONÔMETRO -->
+                <!-- CARD DO MOTORISTA + CRONÔMETRO (AGORA COM BORDA VERDE E TEXTO CENTRALIZADO) -->
                 <div id="infoMotorista" class="hidden bg-white border-2 border-green-500 rounded-xl p-5 text-center mb-6 shadow-md">
                     <p class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Motorista Parceiro</p>
                     <p id="nomeMot" class="font-black text-gray-900 text-xl mb-1">---</p>
                     <p id="veiculoMot" class="text-sm text-gray-600 font-bold mb-4">🚗 --- (<span id="placaMot">---</span>)</p>
                     
-                    <!-- ⏱️ O CRONÔMETRO AGORA ESTÁ DENTRO DO CARD -->
+                    <!-- ⏱️ O CRONÔMETRO -->
                     <div id="areaCronometroCancelamento" class="hidden mt-4 pt-4 border-t border-gray-100">
                         <!-- O JavaScript preencherá o reloginho aqui -->
                     </div>
@@ -318,7 +318,7 @@
             } catch(e) {}
         }
 
-        // 🟢 O NOVO RELÓGIO REFORÇADO (Roda a cada 1 segundo)
+        // 🟢 LOOP DO CRONÔMETRO VISUAL 
         setInterval(() => {
             const areaCronometro = document.getElementById('areaCronometroCancelamento');
             if(areaCronometro && !areaCronometro.classList.contains('hidden') && corridaGlobalId) {
