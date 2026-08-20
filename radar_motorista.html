@@ -22,7 +22,7 @@
         </div>
 
         <div class="p-6 flex-1 flex flex-col">
-            <div class="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+            <div id="caixaRadar" class="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
                 <div>
                     <span id="textoRadar" class="text-sm font-bold text-gray-500">Radar (Desativado)</span>
                     <p class="text-[10px] text-gray-400 mt-1">Ligue para receber chamados</p>
@@ -33,7 +33,7 @@
                 </label>
             </div>
 
-            <div id="areaChamados" class="flex-1 overflow-y-auto space-y-4 text-center">
+            <div id="areaChamados" class="flex-1 overflow-y-auto space-y-4 text-center flex flex-col justify-center">
                 <i class="fa-solid fa-satellite-dish text-6xl text-gray-300 mt-10"></i>
                 <p class="text-gray-500 font-bold mt-4">Aguardando você ficar online...</p>
             </div>
@@ -47,17 +47,69 @@
 
         let loopRadar = null;
         let corridaAtivaId = null;
-        
-        // 🟢 ARRAY DE MEMÓRIA: Guarda os IDs que este motorista recusou
         let chamadosRecusados = []; 
 
-        window.onload = function() {
-            const radarMemoria = localStorage.getItem('radarAtivoMotorista');
-            if (radarMemoria === 'true') {
-                document.getElementById('toggleRadar').checked = true;
-                alternarRadar(); 
+        window.onload = async function() {
+            // 1. Avisa o banco que entrou na tela Emergencial
+            fetch(`${BASE_URL}/usuarios/alterar_modalidade`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ modalidade: "Emergencial" })
+            }).catch(e => console.error(e));
+
+            // 🟢 2. RECUPERAÇÃO DE ESTADO
+            const temViagemPendente = await recuperarEstadoMotorista();
+            
+            // 3. Se não tem viagem presa na memória, liga o radar normalmente se estava ativo
+            if (!temViagemPendente) {
+                const radarMemoria = localStorage.getItem('radarAtivoMotorista');
+                if (radarMemoria === 'true') {
+                    document.getElementById('toggleRadar').checked = true;
+                    alternarRadar(); 
+                }
             }
         };
+
+        // 🟢 FUNÇÃO DE RECUPERAÇÃO DE CORRIDA
+        async function recuperarEstadoMotorista() {
+            try {
+                const res = await fetch(`${BASE_URL}/corridas/emergentes/recuperar_estado`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const json = await res.json();
+                
+                // Se retornou um ID e o usuário é de fato o motorista da corrida
+                if (json.id && json.is_motorista_desta_corrida === true) {
+                    corridaAtivaId = json.id;
+                    const statusRecuperado = json.status;
+                    
+                    // Esconde o botão do radar para focar na viagem
+                    document.getElementById('caixaRadar').classList.add('hidden');
+                    
+                    if (statusRecuperado === "Aceita") {
+                        // Recria a tela de "Ir buscar passageiro"
+                        document.getElementById('areaChamados').innerHTML = `
+                            <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm text-left h-full flex flex-col justify-center">
+                                <h3 class="text-verde font-bold text-lg mb-2 text-center">Indo ao encontro do Passageiro</h3>
+                                <p class="text-sm text-gray-600 text-center mb-6">Siga para o local de embarque.</p>
+                                <button onclick="iniciarViagem()" class="w-full bg-blue-500 text-white font-bold py-4 rounded-lg shadow-md mb-3">
+                                    Passageiro a Bordo (Iniciar Viagem)
+                                </button>
+                            </div>
+                        `;
+                    } else if (statusRecuperado === "Em Viagem") {
+                        // Recria a tela de faturamento e finalização
+                        desenharTelaFinalizacao();
+                    }
+                    
+                    return true; // Tem viagem pendente!
+                }
+            } catch (e) {
+                console.error("Erro ao tentar recuperar estado do motorista:", e);
+            }
+            return false; // Nenhuma viagem pendente
+        }
         
         async function alternarRadar() {
             const isLigado = document.getElementById('toggleRadar').checked;
@@ -73,12 +125,6 @@
                     <p class="text-azul font-bold mt-4">Buscando passageiros na sua região...</p>
                 `;
                 
-                await fetch(`${BASE_URL}/usuarios/alterar_modalidade`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ modalidade: "Emergencial" })
-                }).catch(e => console.error(e));
-
                 buscarChamados();
                 loopRadar = setInterval(buscarChamados, 10000);
 
@@ -91,7 +137,7 @@
                     <p class="text-gray-500 font-bold mt-4">Radar desligado.</p>
                 `;
                 clearInterval(loopRadar);
-                chamadosRecusados = []; // 🟢 Limpa a memória de recusados ao desligar o radar
+                chamadosRecusados = []; 
             }
         }
 
@@ -105,13 +151,11 @@
                 });
                 const chamados = await resposta.json();
                 
-                // 🟢 FILTRO MÁGICO: Remove da tela as corridas que este motorista já recusou
                 const chamadosFiltrados = chamados.filter(c => !chamadosRecusados.includes(c.id));
-                
                 const area = document.getElementById('areaChamados');
 
                 if (chamadosFiltrados.length > 0) {
-                    const c = chamadosFiltrados[0]; // Pega o mais recente
+                    const c = chamadosFiltrados[0]; 
                     area.innerHTML = `
                         <div class="bg-white p-5 rounded-xl border-2 border-azul shadow-lg text-left">
                             <h3 class="text-red-600 font-bold text-sm mb-2"><i class="fa-solid fa-bell"></i> CORRIDA EMERGENTE DETECTADA!</h3>
@@ -124,7 +168,6 @@
                             <button onclick="aceitarCorrida(${c.id})" class="w-full bg-verde text-white font-bold py-3 rounded-lg hover:bg-green-700 transition shadow-md mb-3">
                                 Aceitar Chamado Agora 🗺️
                             </button>
-                            <!-- 🟢 NOVO BOTÃO DE RECUSAR -->
                             <button onclick="recusarCorrida(${c.id})" class="w-full bg-gray-500 text-white font-bold py-3 rounded-lg hover:bg-gray-600 transition shadow-md">
                                 Recusar Chamado ❌
                             </button>
@@ -139,17 +182,12 @@
             } catch (e) { console.error(e); }
         }
 
-        // 🟢 NOVA FUNÇÃO: Oculta a corrida e continua varrendo o radar
         function recusarCorrida(id) {
-            chamadosRecusados.push(id); // Guarda no array de ignorados
-            
-            // Retorna o visual do radar imediatamente
+            chamadosRecusados.push(id); 
             document.getElementById('areaChamados').innerHTML = `
                 <i class="fa-solid fa-radar fa-spin text-5xl text-azul mt-10"></i>
                 <p class="text-azul font-bold mt-4">Buscando passageiros na sua região...</p>
             `;
-            
-            // Força uma busca imediata (caso haja outra pessoa na fila, já exibe)
             buscarChamados();
         }
 
@@ -164,11 +202,13 @@
                     corridaAtivaId = id;
                     clearInterval(loopRadar); 
                     
+                    // Esconde a caixinha do radar para o motorista não se perder
+                    document.getElementById('caixaRadar').classList.add('hidden');
+                    
                     document.getElementById('areaChamados').innerHTML = `
                         <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm text-left h-full flex flex-col justify-center">
                             <h3 class="text-verde font-bold text-lg mb-2 text-center">Indo ao encontro do Passageiro</h3>
                             <p class="text-sm text-gray-600 text-center mb-6">Siga para o local de embarque.</p>
-                            
                             <button onclick="iniciarViagem()" class="w-full bg-blue-500 text-white font-bold py-4 rounded-lg shadow-md mb-3">
                                 Passageiro a Bordo (Iniciar Viagem)
                             </button>
@@ -189,25 +229,29 @@
                     body: JSON.stringify({ status: "Em Viagem", pago: true, valor_corrida: 0.0 })
                 });
 
-                document.getElementById('areaChamados').innerHTML = `
-                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm text-left h-full flex flex-col justify-center">
-                        <h3 class="text-azul font-bold text-xl mb-2 text-center">Viagem em Andamento 🚗</h3>
-                        <p class="text-sm text-gray-600 text-center mb-6">Dirija com segurança até o destino final.</p>
-                        
-                        <div class="mb-4">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">Confirme o valor cobrado (R$):</label>
-                            <input type="number" id="valorCobrado" step="0.01" value="15.00" class="w-full border-2 border-gray-300 rounded-lg p-3 text-lg font-bold text-center outline-none">
-                        </div>
-
-                        <button onclick="finalizarViagem(this, true)" class="w-full bg-verde text-white font-bold py-4 rounded-lg shadow-md mb-3 hover:bg-green-700 transition">
-                            Finalizar e Receber Pagamento ✅
-                        </button>
-                        <button onclick="finalizarViagem(this, false)" class="w-full bg-red-600 text-white font-bold py-4 rounded-lg shadow-md hover:bg-red-700 transition">
-                            Não Recebi (Reportar Calote ❌)
-                        </button>
-                    </div>
-                `;
+                desenharTelaFinalizacao();
             } catch (e) { alert("Erro ao iniciar viagem"); }
+        }
+
+        function desenharTelaFinalizacao() {
+            document.getElementById('areaChamados').innerHTML = `
+                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm text-left h-full flex flex-col justify-center">
+                    <h3 class="text-azul font-bold text-xl mb-2 text-center">Viagem em Andamento 🚗</h3>
+                    <p class="text-sm text-gray-600 text-center mb-6">Dirija com segurança até o destino final.</p>
+                    
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Confirme o valor cobrado (R$):</label>
+                        <input type="number" id="valorCobrado" step="0.01" value="15.00" class="w-full border-2 border-gray-300 rounded-lg p-3 text-lg font-bold text-center outline-none">
+                    </div>
+
+                    <button onclick="finalizarViagem(this, true)" class="w-full bg-verde text-white font-bold py-4 rounded-lg shadow-md mb-3 hover:bg-green-700 transition">
+                        Finalizar e Receber Pagamento ✅
+                    </button>
+                    <button onclick="finalizarViagem(this, false)" class="w-full bg-red-600 text-white font-bold py-4 rounded-lg shadow-md hover:bg-red-700 transition">
+                        Não Recebi (Reportar Calote ❌)
+                    </button>
+                </div>
+            `;
         }
 
         async function finalizarViagem(btn, foiPago) {
