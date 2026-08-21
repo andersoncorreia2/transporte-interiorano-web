@@ -75,6 +75,10 @@
                         <i id="iconeNovaSenha" class="fa-solid fa-eye-slash"></i>
                     </button>
                 </div>
+                <!-- 🟢 ADIÇÃO: Alerta visual de senha fraca -->
+                <p id="avisoSenhaFraca" class="text-red-500 text-[11px] font-bold mt-1 px-1 hidden">
+                    ⚠️ A senha deve conter ao menos 8 caracteres, 1 letra maiúscula, 1 número e 1 caractere especial.
+                </p>
             </div>
 
             <div>
@@ -104,11 +108,6 @@
     <script>
         const BASE_URL = "https://transporte-interiorano-backend.onrender.com"; 
         
-        // =========================================================
-        // 🟢 INÍCIO DA MÁGICA ADICIONADA (MÁSCARA E OLHINHOS)
-        // =========================================================
-
-        // 1. Função para mostrar/esconder senha
         function toggleSenha(inputId, iconId) {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
@@ -121,9 +120,9 @@
             }
         }
 
-        // 2. Máscara do CPF
+        // Máscara do CPF
         document.getElementById('inputCpf').addEventListener('input', function (e) {
-            let value = e.target.value.replace(/\D/g, ''); // Remove letras
+            let value = e.target.value.replace(/\D/g, ''); 
             if (value.length > 11) value = value.slice(0, 11);
             if (value.length > 9) value = value.replace(/^(\d{3})(\d{3})(\d{3})(\d)/, "$1.$2.$3-$4");
             else if (value.length > 6) value = value.replace(/^(\d{3})(\d{3})(\d)/, "$1.$2.$3");
@@ -131,9 +130,24 @@
             e.target.value = value;
         });
 
-        // =========================================================
-        // 🔴 FIM DA MÁGICA ADICIONADA
-        // =========================================================
+        // 🟢 ADIÇÃO: Validador de Senha Forte em tempo real
+        function isSenhaForte(senha) {
+            return senha.length >= 8 &&
+                   /[A-Z]/.test(senha) &&
+                   /[0-9]/.test(senha) &&
+                   /[^a-zA-Z0-9]/.test(senha);
+        }
+
+        document.getElementById('inputNovaSenha').addEventListener('input', function(e) {
+            const senhaDigitada = e.target.value;
+            const aviso = document.getElementById('avisoSenhaFraca');
+            
+            if (senhaDigitada.length > 0 && !isSenhaForte(senhaDigitada)) {
+                aviso.classList.remove('hidden');
+            } else {
+                aviso.classList.add('hidden');
+            }
+        });
 
         const formSolicitar = document.getElementById('formSolicitarCodigo');
         const formRedefinir = document.getElementById('formRedefinirSenha');
@@ -157,7 +171,7 @@
                 const resposta = await fetch(`${BASE_URL}/solicitar_codigo`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, cpf: cpf }) // Verifique se sua API precisa do CPF aqui
+                    body: JSON.stringify({ email: email, cpf: cpf }) 
                 });
 
                 const dados = await resposta.json();
@@ -186,6 +200,13 @@
             const novaSenha = document.getElementById('inputNovaSenha').value;
             const confirmarSenha = document.getElementById('inputConfirmarSenha').value;
 
+            // 🟢 ADIÇÃO: Trava o formulário se a senha for fraca
+            if (!isSenhaForte(novaSenha)) {
+                msgErro.textContent = "A senha escolhida é muito fraca.";
+                msgErro.classList.remove('hidden');
+                return;
+            }
+
             if(novaSenha !== confirmarSenha) {
                 msgErro.textContent = "As senhas não coincidem.";
                 msgErro.classList.remove('hidden');
@@ -197,7 +218,6 @@
             msgErro.classList.add('hidden');
 
             try {
-                // Rotas e Variáveis idênticas ao Python
                 const resposta = await fetch(`${BASE_URL}/validar_e_redefinir_senha`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
