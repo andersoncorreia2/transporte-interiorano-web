@@ -75,7 +75,7 @@
                         <i id="iconeNovaSenha" class="fa-solid fa-eye-slash"></i>
                     </button>
                 </div>
-                <!-- 🟢 ADIÇÃO: Alerta visual de senha fraca -->
+                <!-- Alerta visual de senha fraca -->
                 <p id="avisoSenhaFraca" class="text-red-500 text-[11px] font-bold mt-1 px-1 hidden">
                     ⚠️ A senha deve conter ao menos 8 caracteres, 1 letra maiúscula, 1 número e 1 caractere especial.
                 </p>
@@ -90,6 +90,10 @@
                         <i id="iconeConfirmarSenha" class="fa-solid fa-eye-slash"></i>
                     </button>
                 </div>
+                <!-- 🟢 ADIÇÃO: Alerta visual de senhas diferentes -->
+                <p id="avisoSenhasDiferentes" class="text-red-500 text-[11px] font-bold mt-1 px-1 hidden">
+                    ❌ As senhas digitadas não coincidem!
+                </p>
             </div>
 
             <p id="msgErroPasso2" class="text-red-500 text-sm text-center font-semibold mt-2 hidden"></p>
@@ -130,12 +134,25 @@
             e.target.value = value;
         });
 
-        // 🟢 ADIÇÃO: Validador de Senha Forte em tempo real
+        // Validador de Senha Forte
         function isSenhaForte(senha) {
             return senha.length >= 8 &&
                    /[A-Z]/.test(senha) &&
                    /[0-9]/.test(senha) &&
                    /[^a-zA-Z0-9]/.test(senha);
+        }
+
+        // 🟢 ADIÇÃO: Validador em tempo real para verificar se as senhas coincidem
+        function checkSenhasIguais() {
+            const senha = document.getElementById('inputNovaSenha').value;
+            const confirmacao = document.getElementById('inputConfirmarSenha').value;
+            const avisoDiferente = document.getElementById('avisoSenhasDiferentes');
+            
+            if (confirmacao.length > 0 && senha !== confirmacao) {
+                avisoDiferente.classList.remove('hidden');
+            } else {
+                avisoDiferente.classList.add('hidden');
+            }
         }
 
         document.getElementById('inputNovaSenha').addEventListener('input', function(e) {
@@ -147,7 +164,12 @@
             } else {
                 aviso.classList.add('hidden');
             }
+            
+            checkSenhasIguais(); // Revalida se o usuário voltar e mudar a primeira senha
         });
+
+        // Evento no campo de confirmar senha
+        document.getElementById('inputConfirmarSenha').addEventListener('input', checkSenhasIguais);
 
         const formSolicitar = document.getElementById('formSolicitarCodigo');
         const formRedefinir = document.getElementById('formRedefinirSenha');
@@ -200,7 +222,6 @@
             const novaSenha = document.getElementById('inputNovaSenha').value;
             const confirmarSenha = document.getElementById('inputConfirmarSenha').value;
 
-            // 🟢 ADIÇÃO: Trava o formulário se a senha for fraca
             if (!isSenhaForte(novaSenha)) {
                 msgErro.textContent = "A senha escolhida é muito fraca.";
                 msgErro.classList.remove('hidden');
