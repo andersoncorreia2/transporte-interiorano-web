@@ -16,7 +16,6 @@
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
 
-    <!-- TopBar (Similar ao Scaffold do Compose) -->
     <header class="bg-azul text-white p-4 flex items-center mb-6 rounded-lg shadow-md max-w-lg mx-auto">
         <a href="login.html" class="mr-4 hover:text-gray-300">
             <i class="fa-solid fa-arrow-left text-xl"></i>
@@ -36,6 +35,16 @@
                 <div class="space-y-4">
                     <input type="text" id="nome" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Nome completo">
                     
+                    <!-- 🟢 NOVOS CAMPOS: Gênero e Data de Nascimento lado a lado -->
+                    <div class="flex gap-4">
+                        <select id="genero" required class="w-1/2 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none bg-white text-gray-700">
+                            <option value="" disabled selected>Gênero</option>
+                            <option value="M">M</option>
+                            <option value="F">F</option>
+                        </select>
+                        <input type="text" id="dataNascimento" required maxlength="10" class="w-1/2 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="Data Nasc.">
+                    </div>
+
                     <div>
                         <input type="text" id="cpf" required maxlength="14" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="CPF">
                         <p id="erroCpf" class="text-red-500 text-xs font-bold mt-1 hidden">⚠️ Este CPF já está cadastrado!</p>
@@ -62,8 +71,14 @@
                         <select id="estado" required class="w-1/3 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none bg-white">
                             <option value="" disabled selected>UF</option>
                             <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
-                            <!-- Adicione os demais estados aqui -->
-                            <option value="PE">PE</option><option value="SP">SP</option>
+                            <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+                            <option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option>
+                            <option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+                            <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+                            <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+                            <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+                            <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+                            <option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option>
                         </select>
                     </div>
                     <input type="text" id="cep" required maxlength="9" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-azul outline-none" placeholder="CEP">
@@ -156,11 +171,9 @@
         </form>
     </div>
 
-    <!-- Scripts para validação e máscaras -->
     <script>
         const BASE_URL = "https://transporte-interiorano-backend.onrender.com";
         
-        // Elementos do DOM
         const form = document.getElementById('formCadastro');
         const btnConcluir = document.getElementById('btnConcluir');
         const checkOfertar = document.getElementById('ofertarCarona');
@@ -169,11 +182,9 @@
         const selectTipoVeiculo = document.getElementById('tipoVeiculo');
         const inputVagas = document.getElementById('vagas');
         
-        // Variáveis de estado de validação
         let isUsuarioValido = false;
         let isCpfValido = false;
 
-        // Toggle Visibilidade de Senha
         window.toggleSenha = function(inputId, iconId) {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
@@ -186,32 +197,37 @@
             }
         };
 
-        // Lógica de Ofertar Corridas (Ativar/Desativar campos de veículo)
         checkOfertar.addEventListener('change', (e) => {
             if (e.target.checked) {
                 labelOfertar.textContent = "Ofertar Corridas (Ativado)";
                 labelOfertar.classList.replace('text-gray-500', 'text-azul');
                 camposVeiculo.classList.remove('hidden');
-                // Torna campos obrigatórios
                 document.getElementById('modeloVeiculo').required = true;
                 document.getElementById('placa').required = true;
             } else {
                 labelOfertar.textContent = "Ofertar Corridas (Desativado)";
                 labelOfertar.classList.replace('text-azul', 'text-gray-500');
                 camposVeiculo.classList.add('hidden');
-                // Remove obrigatoriedade
                 document.getElementById('modeloVeiculo').required = false;
                 document.getElementById('placa').required = false;
             }
             validarFormulario();
         });
 
-        // Atualizar Vagas baseado no Tipo de Veículo
         selectTipoVeiculo.addEventListener('change', (e) => {
             inputVagas.value = e.target.value === 'Carro' ? '4' : '1';
         });
 
-        // Máscaras Simples (apenas para exemplo, idealmente usar uma biblioteca como Cleave.js)
+        // 🟢 NOVA MÁSCARA: Data de Nascimento (DD/MM/AAAA)
+        document.getElementById('dataNascimento').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, ''); 
+            if (value.length > 8) value = value.slice(0, 8);
+            if (value.length > 4) value = value.replace(/^(\d{2})(\d{2})(\d)/, "$1/$2/$3");
+            else if (value.length > 2) value = value.replace(/^(\d{2})(\d)/, "$1/$2");
+            e.target.value = value;
+            validarFormulario();
+        });
+
         document.getElementById('cpf').addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 11) value = value.slice(0, 11);
@@ -220,10 +236,11 @@
             else if (value.length > 3) value = value.replace(/^(\d{3})(\d)/, "$1.$2");
             e.target.value = value;
             
-            // Integração real para verificar o CPF
             let cpfLimpo = value.replace(/\D/g, '');
             if(cpfLimpo.length === 11) {
-                verificarCpfBackend(cpfLimpo);
+                // Monta com máscara para checar no banco formatado
+                let cpfFormatado = cpfLimpo.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+                verificarCpfBackend(cpfFormatado);
             } else {
                 isCpfValido = false;
                 document.getElementById('erroCpf').classList.add('hidden');
@@ -231,40 +248,27 @@
             }
         });
 
-        // Máscara do Telefone / WhatsApp
         document.getElementById('telefone').addEventListener('input', function (e) {
-            let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não for número
-            if (value.length > 11) value = value.slice(0, 11); // Limita a 11 dígitos
-            
-            // Aplica a formatação (XX) XXXXX-XXXX
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
             if (value.length > 2) value = `(${value.slice(0,2)}) ${value.slice(2)}`;
             if (value.length > 9) value = `${value.slice(0,10)}-${value.slice(10)}`;
-            
             e.target.value = value;
             validarFormulario();
         });
 
-        // Máscara do CEP
         document.getElementById('cep').addEventListener('input', function (e) {
-            let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não for número
-            if (value.length > 8) value = value.slice(0, 8); // Limita a 8 dígitos
-            
-            // Aplica a formatação XXXXX-XXX
+            let value = e.target.value.replace(/\D/g, ''); 
+            if (value.length > 8) value = value.slice(0, 8); 
             if (value.length > 5) value = `${value.slice(0,5)}-${value.slice(5)}`;
-            
             e.target.value = value;
             validarFormulario();
         });
 
-        // Função para perguntar ao Python se o CPF já existe
         async function verificarCpfBackend(cpf) {
             try {
-                // Dispara a pergunta para a sua API (ajuste a rota '/verificar_cpf' se necessário)
                 const resposta = await fetch(`${BASE_URL}/verificar_cpf/${cpf}`);
-                
-                // Dependendo de como seu Python responde, ele pode dar um erro 409 ou um JSON {existe: true}
                 if (resposta.status === 409 || resposta.status === 400) {
-                    // CPF JÁ EXISTE!
                     isCpfValido = false;
                     document.getElementById('erroCpf').classList.remove('hidden');
                 } else {
@@ -273,20 +277,17 @@
                         isCpfValido = false;
                         document.getElementById('erroCpf').classList.remove('hidden');
                     } else {
-                        // CPF LIVRE!
                         isCpfValido = true;
                         document.getElementById('erroCpf').classList.add('hidden');
                     }
                 }
             } catch (erro) {
                 console.error("Erro ao verificar CPF no servidor:", erro);
-                // Se der falha na rede, deixamos preencher e o servidor barra no final
                 isCpfValido = true; 
             }
-            validarFormulario(); // Atualiza o botão de Concluir
+            validarFormulario(); 
         }
 
-        // Debounce para Username e geração do nome base
         let debounceTimer;
         document.getElementById('nome').addEventListener('input', (e) => {
             clearTimeout(debounceTimer);
@@ -315,22 +316,44 @@
         async function verificarUsername(user) {
             if(!user) return;
             try {
-                // Substitua esta simulação pela chamada real à sua API:
-                // const resposta = await fetch(`${BASE_URL}/verificar_usuario?user=${user}`);
-                // const dados = await resposta.json();
+                const resposta = await fetch(`${BASE_URL}/verificar_usuario/${encodeURIComponent(user)}`);
+                const dados = await resposta.json();
                 
-                // Simulação de sucesso:
-                isUsuarioValido = true;
-                document.getElementById('erroUsername').classList.add('hidden');
-                document.getElementById('sugestoesUsername').classList.add('hidden');
+                if (dados.disponivel === true) {
+                    isUsuarioValido = true;
+                    document.getElementById('erroUsername').classList.add('hidden');
+                    document.getElementById('sugestoesUsername').classList.add('hidden');
+                } else {
+                    isUsuarioValido = false;
+                    document.getElementById('erroUsername').classList.remove('hidden');
+                    
+                    const divSugestoes = document.getElementById('sugestoesUsername');
+                    divSugestoes.innerHTML = '';
+                    if (dados.sugestoes && dados.sugestoes.length > 0) {
+                        dados.sugestoes.forEach(sug => {
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'px-3 py-1 bg-blue-100 text-azul rounded-full text-xs font-bold shrink-0';
+                            btn.textContent = sug;
+                            btn.onclick = () => {
+                                document.getElementById('username').value = sug;
+                                isUsuarioValido = true;
+                                document.getElementById('erroUsername').classList.add('hidden');
+                                divSugestoes.classList.add('hidden');
+                                validarFormulario();
+                            };
+                            divSugestoes.appendChild(btn);
+                        });
+                        divSugestoes.classList.remove('hidden');
+                    }
+                }
             } catch (error) {
                 console.error(error);
-                isUsuarioValido = false;
+                isUsuarioValido = true; // Libera em caso de falha de rede
             }
             validarFormulario();
         }
 
-        // Validação de Senha
         const inputSenha = document.getElementById('senha');
         const inputConfirmar = document.getElementById('confirmarSenha');
         const erroSenha = document.getElementById('erroSenhaFormat');
@@ -363,20 +386,22 @@
         inputSenha.addEventListener('input', () => { checarSenha(); validarFormulario(); });
         inputConfirmar.addEventListener('input', () => { checarConfirmacao(); validarFormulario(); });
 
-        // Termos
         const checkTermos = document.getElementById('termosAceitos');
         checkTermos.addEventListener('change', validarFormulario);
 
-        // Função Central de Validação
+        // 🟢 ADICIONADO: Event listeners para os novos campos obrigatórios
+        document.getElementById('genero').addEventListener('change', validarFormulario);
+
         function validarFormulario() {
             const senhaOk = checarSenha();
             const confirmarOk = checarConfirmacao();
             const termosOk = checkTermos.checked;
+            const dataNascOk = document.getElementById('dataNascimento').value.length === 10;
+            const generoOk = document.getElementById('genero').value !== "";
             
-            // Aqui você deve adicionar verificações `.checkValidity()` para campos required
             const formValidoBase = form.checkValidity();
 
-            const isValid = formValidoBase && senhaOk && confirmarOk && termosOk && isUsuarioValido && isCpfValido;
+            const isValid = formValidoBase && senhaOk && confirmarOk && termosOk && isUsuarioValido && isCpfValido && dataNascOk && generoOk;
 
             if (isValid) {
                 btnConcluir.disabled = false;
@@ -389,37 +414,42 @@
             }
         }
 
-        // Adicionar eventos aos inputs required para acionar a validação base do form
-        form.querySelectorAll('input[required]').forEach(input => {
-            input.addEventListener('input', validarFormulario);
+        form.querySelectorAll('input[required], select[required]').forEach(el => {
+            el.addEventListener('input', validarFormulario);
+            el.addEventListener('change', validarFormulario);
         });
 
-        // Submissão do Formulário
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             btnConcluir.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
             btnConcluir.disabled = true;
 
-            // Coletar dados
             const dadosCadastro = {
                 nome: document.getElementById('nome').value,
-                cpf: document.getElementById('cpf').value.replace(/\D/g, ''),
-                telefone: document.getElementById('telefone').value,
+                genero: document.getElementById('genero').value, // 🟢 Adicionado
+                data_nascimento: document.getElementById('dataNascimento').value, // 🟢 Adicionado (vai mascarado)
+                cpf: document.getElementById('cpf').value, // Vai mascarado
+                telefone: document.getElementById('telefone').value, // Vai mascarado
                 email: document.getElementById('email').value,
                 senha: inputSenha.value,
                 usuario: document.getElementById('username').value,
-                cep: document.getElementById('cep').value.replace(/\D/g, ''),
+                cep: document.getElementById('cep').value, // Vai mascarado
                 rua: document.getElementById('rua').value,
                 numero: document.getElementById('numero').value,
                 complemento: document.getElementById('complemento').value,
                 bairro: document.getElementById('bairro').value,
                 cidade: document.getElementById('cidade').value,
-                uf: document.getElementById('estado').value,
+                estado: document.getElementById('estado').value,
             };
 
             if(checkOfertar.checked) {
                 dadosCadastro.veiculo = `${selectTipoVeiculo.value} - ${document.getElementById('modeloVeiculo').value}`;
-                dadosCadastro.placa = document.getElementById('placa').value.toUpperCase();
+                dadosCadastro.placa = document.getElementById('placa').value.toUpperCase(); // Já possui máscara no backend mas aqui pode mandar limpo
+                // Aplica máscara na placa se não tiver
+                let p = dadosCadastro.placa.replace(/[^A-Z0-9]/g, '');
+                if(p.length > 3) p = p.substring(0,3) + '-' + p.substring(3,7);
+                dadosCadastro.placa = p;
+
                 dadosCadastro.vagas = parseInt(inputVagas.value);
             } else {
                 dadosCadastro.veiculo = "";
@@ -428,8 +458,7 @@
             }
 
             try {
-                // Enviando os dados para o banco de dados via Python
-                const resposta = await fetch(`${BASE_URL}/usuarios`, { // Verifique se sua rota de cadastro no Python é /usuarios
+                const resposta = await fetch(`${BASE_URL}/usuarios`, { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dadosCadastro)
@@ -437,12 +466,10 @@
                 
                 const resultado = await resposta.json();
 
-                // 201 significa "Criado com sucesso" no padrão de APIs
                 if (resposta.ok || resposta.status === 201) {
-                    alert("✅ Cadastro realizado com sucesso!");
+                    alert("✅ Conta criada com sucesso! Faça seu login.");
                     window.location.href = 'login.html';
                 } else {
-                    // Se o Python barrar por algum motivo (ex: CPF já existe)
                     throw new Error(resultado.erro || "Não foi possível concluir o cadastro.");
                 }
                 

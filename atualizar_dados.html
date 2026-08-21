@@ -14,7 +14,6 @@
 
     <div class="bg-fundo w-full max-w-sm min-h-[700px] shadow-2xl relative flex flex-col overflow-y-auto">
         
-        <!-- Header -->
         <div class="bg-azul text-white p-4 flex items-center sticky top-0 z-20 shadow-md">
             <button onclick="window.location.href='perfil.html'" class="hover:bg-blue-800 p-2 rounded-full transition mr-3">
                 <i class="fa-solid fa-arrow-left text-xl"></i>
@@ -33,6 +32,22 @@
                         <input type="text" id="nome" required class="w-full bg-transparent border border-gray-300 rounded-lg p-3 text-gray-900 font-bold outline-none focus:border-azul">
                     </div>
                     
+                    <!-- 🟢 NOVOS CAMPOS: Gênero e Data de Nascimento lado a lado -->
+                    <div class="flex gap-3">
+                        <div class="relative flex-1">
+                            <label class="absolute -top-2 left-2 bg-fundo px-1 text-[11px] text-gray-500 font-bold">Gênero</label>
+                            <select id="genero" required class="w-full bg-transparent border border-gray-300 rounded-lg p-3 text-gray-900 font-bold outline-none focus:border-azul appearance-none">
+                                <option value="" disabled>Selecione</option>
+                                <option value="M">M</option>
+                                <option value="F">F</option>
+                            </select>
+                        </div>
+                        <div class="relative flex-1">
+                            <label class="absolute -top-2 left-2 bg-fundo px-1 text-[11px] text-gray-500 font-bold">Data Nasc.</label>
+                            <input type="text" id="dataNascimento" required maxlength="10" class="w-full bg-transparent border border-gray-300 rounded-lg p-3 text-gray-900 font-bold outline-none focus:border-azul">
+                        </div>
+                    </div>
+
                     <div class="relative">
                         <label class="absolute -top-2 left-2 bg-gray-200 px-1 text-[11px] text-gray-500 font-bold">CPF (Não editável)</label>
                         <input type="text" id="cpf" disabled class="w-full bg-gray-200 border border-gray-300 rounded-lg p-3 text-gray-700 font-bold outline-none cursor-not-allowed">
@@ -79,11 +94,15 @@
                         <div class="relative flex-1">
                             <label class="absolute -top-2 left-2 bg-fundo px-1 text-[11px] text-gray-500 font-bold">UF</label>
                             <select id="estado" class="w-full bg-transparent border border-gray-300 rounded-lg p-3 text-gray-900 font-bold outline-none focus:border-azul appearance-none">
-                                <option value="PE">PE</option>
-                                <option value="PB">PB</option>
-                                <option value="AL">AL</option>
-                                <option value="RN">RN</option>
-                                <option value="CE">CE</option>
+                                <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+                                <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+                                <option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option>
+                                <option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+                                <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+                                <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+                                <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+                                <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+                                <option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option>
                             </select>
                         </div>
                     </div>
@@ -110,7 +129,6 @@
                     </div>
                 </div>
 
-                <!-- CARD DE VEÍCULO (IGUAL AO ANDROID) -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
                         <span id="textoToggleOfertar" class="text-[15px] font-bold text-azul">Ofertar Corridas (Desativado)</span>
@@ -163,7 +181,6 @@
 
         if (!token) window.location.href = 'login.html';
 
-        // 🟢 FUNÇÕES DE MÁSCARA (Separadas para rodarem no load e na digitação)
         function aplicarMascaraTelefone(v) {
             if(!v) return "";
             let x = v.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
@@ -185,12 +202,18 @@
             return x;
         }
 
-        // EVENTOS DE DIGITAÇÃO PARA AS MÁSCARAS
+        // 🟢 NOVA MÁSCARA: Data de Nascimento (DD/MM/AAAA)
+        function aplicarMascaraData(v) {
+            if(!v) return "";
+            let x = v.replace(/\D/g, '').match(/(\d{0,2})(\d{0,2})(\d{0,4})/);
+            return !x[2] ? x[1] : x[1] + '/' + x[2] + (x[3] ? '/' + x[3] : '');
+        }
+
         document.getElementById('telefone').addEventListener('input', e => e.target.value = aplicarMascaraTelefone(e.target.value));
         document.getElementById('cep').addEventListener('input', e => e.target.value = aplicarMascaraCep(e.target.value));
         document.getElementById('placa').addEventListener('input', e => e.target.value = aplicarMascaraPlaca(e.target.value));
+        document.getElementById('dataNascimento').addEventListener('input', e => e.target.value = aplicarMascaraData(e.target.value));
 
-        // ALTERNAR UI DO MOTORISTA
         function alternarMotorista() {
             const toggle = document.getElementById('toggleOfertar');
             const area = document.getElementById('areaMotorista');
@@ -205,7 +228,6 @@
             }
         }
 
-        // CARREGAR DADOS NA TELA COM AS MÁSCARAS JÁ APLICADAS
         window.onload = function() {
             const dadosUsuarioStr = localStorage.getItem('dadosUsuario');
             if (dadosUsuarioStr) {
@@ -213,12 +235,14 @@
                 
                 document.getElementById('nome').value = dadosOriginais.nome || '';
                 
-                // Formata CPF para visualização
+                // 🟢 PREENCHE OS NOVOS CAMPOS
+                if (dadosOriginais.genero) document.getElementById('genero').value = dadosOriginais.genero;
+                document.getElementById('dataNascimento').value = aplicarMascaraData(dadosOriginais.dataNascimento);
+
                 let c = (dadosOriginais.cpf || '').replace(/\D/g, '');
                 if (c.length === 11) c = c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
                 document.getElementById('cpf').value = c;
                 
-                // 🟢 APLICA MÁSCARAS NO CARREGAMENTO
                 document.getElementById('telefone').value = aplicarMascaraTelefone(dadosOriginais.telefone);
                 document.getElementById('cep').value = aplicarMascaraCep(dadosOriginais.cep);
                 
@@ -231,17 +255,15 @@
                 document.getElementById('email').value = dadosOriginais.email || '';
                 document.getElementById('username').value = dadosOriginais.usuario || '';
 
-                // LÓGICA DO VEÍCULO (Separando Carro/Moto do Modelo)
                 const temVeiculo = dadosOriginais.veiculo && dadosOriginais.veiculo.trim() !== "";
                 document.getElementById('toggleOfertar').checked = temVeiculo;
-                alternarMotorista(); // Chama para atualizar a UI
+                alternarMotorista(); 
 
                 if(temVeiculo) {
                     let veiculoCompleto = dadosOriginais.veiculo;
                     if(veiculoCompleto.includes(" - ")) {
                         let partes = veiculoCompleto.split(" - ");
                         document.getElementById('tipoVeiculo').value = partes[0].trim();
-                        // Junta o resto caso o modelo também tenha traço no nome
                         document.getElementById('modeloVeiculo').value = partes.slice(1).join(" - ").trim(); 
                     } else {
                         document.getElementById('tipoVeiculo').value = "Carro";
@@ -254,23 +276,31 @@
             }
         };
 
-        // SALVAR DADOS
         document.getElementById('formAtualizar').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // 🟢 Validação de Data de Nascimento completa (10 caracteres "DD/MM/AAAA")
+            const dataDigitada = document.getElementById('dataNascimento').value;
+            if (dataDigitada.length < 10) {
+                alert("Por favor, preencha a Data de Nascimento completa.");
+                return;
+            }
+
             const btnSalvar = document.getElementById('btnSalvar');
             btnSalvar.disabled = true;
             btnSalvar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
 
             const querOfertar = document.getElementById('toggleOfertar').checked;
             
-            // Junta novamente para enviar ao banco do jeito que o app espera: "Carro - Fiat Uno"
             const tipoSelecionado = document.getElementById('tipoVeiculo').value;
             const modeloDigitado = document.getElementById('modeloVeiculo').value;
             const veiculoMontado = querOfertar ? `${tipoSelecionado} - ${modeloDigitado}` : "";
             
             const payloadAtualizado = {
                 nome: document.getElementById('nome').value,
-                telefone: document.getElementById('telefone').value, // Envia com máscara mesmo, o BD lida com isso
+                genero: document.getElementById('genero').value, // 🟢 Adicionado
+                data_nascimento: dataDigitada, // 🟢 Adicionado
+                telefone: document.getElementById('telefone').value, 
                 email: document.getElementById('email').value,
                 rua: document.getElementById('rua').value,
                 numero: document.getElementById('numero').value,
