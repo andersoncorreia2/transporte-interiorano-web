@@ -315,7 +315,7 @@
             };
 
             try {
-                const cpfReal = dadosOriginais.cpf.replace(/\D/g, '');
+                const cpfReal = dadosOriginais.cpf
                 const resposta = await fetch(`${BASE_URL}/usuarios/${encodeURIComponent(cpfReal)}`, {
                     method: 'PUT',
                     headers: { 
