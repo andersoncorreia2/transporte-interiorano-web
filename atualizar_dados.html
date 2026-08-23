@@ -315,7 +315,8 @@
             };
 
             try {
-                const cpfReal = dadosOriginais.cpf
+                // O CPF tem que ir com a pontuação original do banco!
+                const cpfReal = dadosOriginais.cpf; 
                 const resposta = await fetch(`${BASE_URL}/usuarios/${encodeURIComponent(cpfReal)}`, {
                     method: 'PUT',
                     headers: { 
