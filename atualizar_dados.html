@@ -237,7 +237,7 @@
                 
                 // 🟢 PREENCHE OS NOVOS CAMPOS
                 if (dadosOriginais.genero) document.getElementById('genero').value = dadosOriginais.genero;
-                document.getElementById('dataNascimento').value = aplicarMascaraData(dadosOriginais.dataNascimento);
+                document.getElementById('dataNascimento').value = aplicarMascaraData(dadosOriginais.data_nascimento);
 
                 let c = (dadosOriginais.cpf || '').replace(/\D/g, '');
                 if (c.length === 11) c = c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
