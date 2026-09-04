@@ -33,11 +33,11 @@
 
         <div class="flex-1 px-6 py-2 flex flex-col items-center">
             
+            <p id="saudacao" class="text-[18px] text-gray-700 font-bold mb-2 w-full text-center hidden"></p>
+
             <h2 class="text-[22px] font-bold text-azul mb-8 text-center tracking-tight">
                 Como deseja viajar hoje?
             </h2>
-
-            <p id="saudacao" class="text-sm text-gray-500 font-semibold mb-6 w-full text-center hidden"></p>
 
             <button onclick="window.location.href='perfil.html'" 
                 class="w-full bg-azul text-white font-bold py-3.5 rounded-[8px] mb-4 shadow-sm hover:bg-blue-700 transition">
@@ -83,11 +83,12 @@
             const nomeLogado = localStorage.getItem('nomeLogado');
             if(nomeLogado) {
                 const pSaudacao = document.getElementById('saudacao');
-                pSaudacao.textContent = `Olá, ${nomeLogado.split(' ')[0]}!`;
+                const primeiroNome = nomeLogado.split(' ')[0].toUpperCase(); // Corta o nome e deixa maiúsculo
+                pSaudacao.textContent = `OLÁ, ${primeiroNome}!`;
                 pSaudacao.classList.remove('hidden');
             }
 
-            // 🟢 AUDITORIA GLOBAL ANTI-CALOTE (Bloqueia o painel inteiro logo após o login)
+            // AUDITORIA GLOBAL ANTI-CALOTE (Bloqueia o painel inteiro logo após o login)
             try {
                 mostrarLoading("Verificando sua conta...");
                 const res = await fetch(`${BASE_URL}/pagamentos/emergente/verificar_debito`, {
