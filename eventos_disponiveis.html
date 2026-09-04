@@ -273,13 +273,28 @@
             }
         }
 
-        // FUNÇÕES DO MODAL DE DETALHES (ANÁLISE DO MOTORISTA)
-        function abrirDetalhes(idCarona) {
+        // 🟢 FUNÇÕES DO MODAL DE DETALHES (ANÁLISE DO MOTORISTA)
+        async function abrirDetalhes(idCarona) {
             const carona = window.listaCaronasGlobal.find(c => c.id === idCarona);
             if(!carona) return;
 
-            const corridas = carona.corridas_realizadas || 0;
-            const passageiros = carona.passageiros_conduzidos || 0;
+            let corridas = carona.corridas_realizadas || 0;
+            let passageiros = carona.passageiros_conduzidos || 0;
+
+            // 🟢 FAZ A BUSCA EM TEMPO REAL DAS MÉTRICAS DO MOTORISTA (IDÊNTICO AO ANDROID)
+            if (carona.motorista_cpf) {
+                try {
+                    const resMetricas = await fetch(`${BASE_URL}/usuarios_por_cpf/${carona.motorista_cpf}`);
+                    if (resMetricas.ok) {
+                        const metricas = await resMetricas.json();
+                        corridas = metricas.corridas_realizadas || 0;
+                        passageiros = metricas.passageiros_conduzidos || 0;
+                    }
+                } catch (e) {
+                    console.error("Erro ao buscar métricas:", e);
+                }
+            }
+
             const valorTotal = parseFloat(carona.valor_corrida || 0);
 
             const conteudo = `
