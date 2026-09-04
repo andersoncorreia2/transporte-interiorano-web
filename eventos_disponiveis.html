@@ -36,10 +36,30 @@
             </div>
         </div>
 
+        </div>
+
+        <!-- 🟢 MODAL DE DETALHES DA CORRIDA (IGUAL AO ANDROID) -->
+        <div id="modalDetalhes" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex flex-col items-center justify-end sm:justify-center p-0 sm:p-4 backdrop-blur-sm transition-opacity">
+            <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+                <div class="bg-azul p-4 flex items-center justify-between shadow-md z-10">
+                    <h3 class="text-white font-bold text-[18px]">Detalhes da Corrida</h3>
+                    <button onclick="fecharDetalhes()" class="text-white hover:text-gray-200 bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+                <div id="conteudoDetalhes" class="p-6 overflow-y-auto space-y-5 bg-gray-50">
+                    <!-- Preenchido via JavaScript -->
+                </div>
+                <div class="p-5 border-t border-gray-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]" id="rodapeDetalhes">
+                    <!-- Botão Confirmar Vaga -->
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        const BASE_URL = "https://transporte-interiorano-backend.onrender.com"; 
+        const BASE_URL = "https://transporte-interiorano-backend.onrender.com";
         const cpfLogado = localStorage.getItem('cpfLogado');
 
         if (!cpfLogado) {
@@ -62,6 +82,9 @@
                 // 1. Busca viagens e solicitações do banco
                 const resposta = await fetch(`${BASE_URL}/caronas/${cpfLimpo}`, { cache: 'no-store' });
                 const caronas = await resposta.json();
+
+                // SALVA NA MEMÓRIA PARA A TELA DE DETALHES CONSEGUIR LER O MOTORISTA
+                window.listaCaronasGlobal = caronas; 
 
                 const respostaSol = await fetch(`${BASE_URL}/solicitacoes`, { cache: 'no-store' });
                 const todasSolicitacoes = await respostaSol.json();
@@ -96,14 +119,14 @@
 
                     // Verifica se EU já solicitei esta carona
                     const minhaSolicitacao = pedidosDestaCarona.find(s => 
-                        s.passageiro_cpf === cpfLimpo && 
+                        (s.passageiro_cpf || "").replace(/\D/g, '') === cpfLimpo && 
                         !s.status.toLowerCase().includes("expirado") && 
                         !s.status.toLowerCase().includes("cancelada")
                     );
 
                     let botoesAcaoHTML = '';
 
-                    // 🟢 CONTROLE VISUAL E CRONÔMETRO (IDÊNTICO AO ANDROID)
+                    // CONTROLE VISUAL E CRONÔMETRO (IDÊNTICO AO ANDROID)
                     if (minhaSolicitacao) {
                         const statusMeu = minhaSolicitacao.status.toLowerCase();
                         
@@ -142,10 +165,10 @@
                     } else {
                         // Se não tem solicitação, mostra botão original
                         botoesAcaoHTML = `
-                            <button onclick="solicitarVaga(${carona.id})" 
+                            <button onclick="abrirDetalhes(${carona.id})" 
                                 ${esgotado ? 'disabled' : ''}
                                 class="w-full ${esgotado ? 'bg-gray-400 cursor-not-allowed' : 'bg-verde hover:bg-green-700'} text-white font-bold py-3.5 rounded-xl transition shadow-md flex justify-center items-center gap-2 mt-2">
-                                ${esgotado ? 'Vagas Esgotadas' : 'Solicitar Vaga <i class="fa-solid fa-car-side"></i>'}
+                                ${esgotado ? 'Vagas Esgotadas' : 'Ver Detalhes e Solicitar <i class="fa-solid fa-arrow-right"></i>'}
                             </button>
                         `;
                     }
@@ -250,10 +273,80 @@
             }
         }
 
+        // FUNÇÕES DO MODAL DE DETALHES (ANÁLISE DO MOTORISTA)
+        function abrirDetalhes(idCarona) {
+            const carona = window.listaCaronasGlobal.find(c => c.id === idCarona);
+            if(!carona) return;
+
+            const corridas = carona.corridas_realizadas || 0;
+            const passageiros = carona.passageiros_conduzidos || 0;
+            const valorTotal = parseFloat(carona.valor_corrida || 0);
+
+            const conteudo = `
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-azul flex items-center justify-center"><i class="fa-solid fa-location-dot"></i></div>
+                    <div>
+                        <p class="text-[11px] text-gray-500 font-bold uppercase">Origem</p>
+                        <p class="font-bold text-gray-900">${carona.cidade_origem}</p>
+                        <p class="text-[13px] text-gray-600">${carona.endereco_origem}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-green-50 text-verde flex items-center justify-center"><i class="fa-solid fa-location-dot"></i></div>
+                    <div>
+                        <p class="text-[11px] text-gray-500 font-bold uppercase">Destino</p>
+                        <p class="font-bold text-gray-900">${carona.cidade_destino}</p>
+                        <p class="text-[13px] text-gray-600">${carona.endereco_destino}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center"><i class="fa-regular fa-clock"></i></div>
+                    <div>
+                        <p class="text-[11px] text-gray-500 font-bold uppercase">Horário</p>
+                        <p class="font-bold text-gray-900">${carona.horario}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                    <div class="w-12 h-12 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xl"><i class="fa-solid fa-user"></i></div>
+                    <div>
+                        <p class="text-[11px] text-gray-500 font-bold uppercase">Motorista</p>
+                        <p class="font-bold text-gray-900 leading-tight">${carona.motorista}</p>
+                        <p class="text-[12px] text-gray-600 mt-1"><i class="fa-solid fa-car text-azul"></i> Corridas: <span class="font-bold">${corridas}</span></p>
+                        <p class="text-[12px] text-gray-600"><i class="fa-solid fa-users text-verde"></i> Passageiros: <span class="font-bold">${passageiros}</span></p>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between mt-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-sack-dollar text-2xl text-gray-400"></i>
+                        <p class="text-sm text-gray-500 font-bold uppercase mt-1">Valor Total</p>
+                    </div>
+                    <p class="font-black text-xl text-azul">R$ ${valorTotal.toFixed(2)}</p>
+                </div>
+            `;
+
+            document.getElementById('conteudoDetalhes').innerHTML = conteudo;
+            document.getElementById('rodapeDetalhes').innerHTML = `
+                <button onclick="solicitarVaga(${carona.id})" class="w-full bg-verde hover:bg-green-700 text-white font-bold py-4 rounded-xl transition shadow-lg flex justify-center items-center gap-2 text-[16px]">
+                    Confirmar Vaga <i class="fa-solid fa-check"></i>
+                </button>
+            `;
+            document.getElementById('modalDetalhes').classList.remove('hidden');
+        }
+
+        function fecharDetalhes() {
+            document.getElementById('modalDetalhes').classList.add('hidden');
+        }
+
         // =========================================================================
         // FUNÇÕES DO PIX COM O NOVO DESIGN
         // =========================================================================
         async function solicitarVaga(idCarona) {
+            fecharDetalhes(); // FECHA A TELA DE DETALHES ANTES DE ABRIR O PIX
+
             const token = localStorage.getItem('tokenSessao');
             if (!token) {
                 alert("Sua sessão expirou. Faça login novamente.");
